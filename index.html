@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Skin Journal</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero card">
+        <div class="hero-main">
+          <div class="hero-topline">
+            <span class="app-mark" aria-hidden="true">
+              <ion-icon name="water-outline"></ion-icon>
+            </span>
+            <p class="eyebrow">Personal Routine Dashboard</p>
+          </div>
+          <h1>My Skin Journal</h1>
+          <p class="hero-copy">
+            매일의 루틴을 가볍게 기록하고, 내 피부 컨디션에 맞게 조정하는
+            개인 스킨케어 저널.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <div class="header-buttons">
+            <button id="themeToggle" class="button" type="button" aria-pressed="false">
+              <ion-icon name="sunny-outline" aria-hidden="true"></ion-icon>
+              <span>Light mode</span>
+            </button>
+            <button id="resetButton" class="button button-secondary" type="button">
+              <ion-icon name="refresh-outline" aria-hidden="true"></ion-icon>
+              <span>기본값으로 리셋</span>
+            </button>
+          </div>
+          <p id="saveStatus" class="save-status" aria-live="polite">
+            로컬에 자동 저장됨
+          </p>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="journal-area">
+          <div class="section-header">
+            <div>
+              <p class="section-label">
+                <ion-icon name="calendar-clear-outline" aria-hidden="true"></ion-icon>
+                <span>Weekly Plan</span>
+              </p>
+              <h2>Weekly routine</h2>
+              <p class="section-note">더블클릭하면 해당 칸만 수정할 수 있어요.</p>
+            </div>
+          </div>
+
+          <div class="table-card card">
+            <div class="table-wrap">
+              <table class="routine-table">
+                <colgroup>
+                  <col class="col-day" />
+                  <col class="col-morning" />
+                  <col class="col-evening" />
+                  <col class="col-skincare" />
+                  <col class="col-extra" />
+                  <col class="col-done" />
+                  <col class="col-notes" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Day</th>
+                    <th>Morning routine</th>
+                    <th>Evening cleanse</th>
+                    <th>Afternoon/Evening skincare</th>
+                    <th>Extra care</th>
+                    <th>Done</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="routineTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="mobileCards" class="mobile-cards"></div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="card info-card">
+            <p class="section-kicker">
+              <ion-icon name="bookmark-outline" aria-hidden="true"></ion-icon>
+              <span>Core Rules</span>
+            </p>
+            <h2>기본 규칙</h2>
+            <ul class="rule-list">
+              <li>레티놀 + 비타민C 같은 날 X</li>
+              <li>클레이 날 = 레티놀 / 비타민C X</li>
+              <li>오일 + 레티놀 화/금 OK</li>
+              <li>에스트라는 항상 마지막, 필요할 때</li>
+            </ul>
+          </section>
+
+          <section class="card info-card">
+            <p class="section-kicker">
+              <ion-icon name="water-outline" aria-hidden="true"></ion-icon>
+              <span>Morning Cleansing Guide</span>
+            </p>
+            <h2>아침 세안 가이드</h2>
+            <div class="guide-block">
+              <h3>물세안</h3>
+              <ul class="guide-list">
+                <li>전날 레티놀/클레이 했을 때</li>
+                <li>피부가 건조하거나 예민할 때</li>
+                <li>아침에 안 번들거릴 때</li>
+              </ul>
+            </div>
+            <div class="guide-block">
+              <h3>폼세안</h3>
+              <ul class="guide-list">
+                <li>T존 번들거림</li>
+                <li>땀/피지 많을 때</li>
+                <li>전날 크림을 많이 발랐을 때</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="card info-card mini-card">
+            <p class="section-kicker">
+              <ion-icon name="sparkles-outline" aria-hidden="true"></ion-icon>
+              <span>Journal Mood</span>
+            </p>
+            <h2>오늘도 천천히</h2>
+            <p class="mini-copy">
+              완벽하게 지키는 것보다, 내 피부 반응을 기록하는 게 더 중요해요.
+            </p>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
+  </body>
+</html>
