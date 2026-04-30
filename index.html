@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Skin Journal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Red+Hat+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -14,43 +20,127 @@
             <span class="app-mark" aria-hidden="true">
               <ion-icon name="water-outline"></ion-icon>
             </span>
-            <p class="eyebrow">Personal Routine Dashboard</p>
+            <p class="eyebrow">Personal Skin Routine</p>
           </div>
           <h1>My Skin Journal</h1>
           <p class="hero-copy">
-            매일의 루틴을 가볍게 기록하고, 내 피부 컨디션에 맞게 조정하는
+            매일의 루틴을 가볍게 정리하고, 어디서든 같은 계정으로 이어서 보는
             개인 스킨케어 저널.
           </p>
         </div>
         <div class="hero-actions">
+          <div id="authStatus" class="auth-status" hidden>
+            <div class="auth-user">
+              <span class="auth-user-icon" aria-hidden="true">
+                <ion-icon name="person-outline"></ion-icon>
+              </span>
+              <div class="auth-user-copy">
+                <p class="auth-user-label">Signed in</p>
+                <p id="authUserEmail" class="auth-user-email"></p>
+              </div>
+            </div>
+            <button id="logoutButton" class="button button-secondary" type="button">
+              <ion-icon name="log-out-outline" aria-hidden="true"></ion-icon>
+              <span>로그아웃</span>
+            </button>
+          </div>
           <div class="header-buttons">
             <button id="themeToggle" class="button" type="button" aria-pressed="false">
               <ion-icon name="sunny-outline" aria-hidden="true"></ion-icon>
               <span>Light mode</span>
             </button>
-            <button id="resetButton" class="button button-secondary" type="button">
-              <ion-icon name="refresh-outline" aria-hidden="true"></ion-icon>
-              <span>기본값으로 리셋</span>
-            </button>
+            <div class="settings-menu">
+              <button
+                id="settingsButton"
+                class="button button-secondary"
+                type="button"
+                aria-expanded="false"
+                aria-controls="settingsPanel"
+              >
+                <ion-icon name="settings-outline" aria-hidden="true"></ion-icon>
+                <span>Settings</span>
+              </button>
+              <div id="settingsPanel" class="settings-panel" hidden>
+                <button id="exportButton" class="settings-item" type="button">
+                  <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
+                  <span>Export JSON</span>
+                </button>
+                <button id="importButton" class="settings-item" type="button">
+                  <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
+                  <span>Import JSON</span>
+                </button>
+              </div>
+            </div>
           </div>
-          <p id="saveStatus" class="save-status" aria-live="polite">
-            로컬에 자동 저장됨
-          </p>
+          <p id="saveStatus" class="save-status" aria-live="polite" hidden></p>
         </div>
       </header>
 
-      <main class="layout">
+      <section id="authCard" class="auth-card card">
+        <div class="auth-card-copy">
+          <p class="section-label">
+            <ion-icon name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
+            <span>Account</span>
+          </p>
+          <h2>간단하게 시작하기</h2>
+          <p class="section-note">
+            이름과 비밀번호만 만들면 됩니다. 이메일 인증 없이 바로 들어가고,
+            같은 이름으로 다른 기기에서도 이어서 사용할 수 있어요.
+          </p>
+        </div>
+
+        <div class="auth-tabs" role="tablist" aria-label="Auth mode">
+          <button id="signInTab" class="auth-tab is-active" type="button" role="tab" aria-selected="true">
+            로그인
+          </button>
+          <button id="signUpTab" class="auth-tab" type="button" role="tab" aria-selected="false">
+            회원가입
+          </button>
+        </div>
+
+        <form id="authForm" class="auth-form">
+          <label class="auth-field">
+            <span>이름</span>
+            <input id="authUsername" type="text" autocomplete="username" placeholder="사용할 이름 입력" required />
+          </label>
+          <label class="auth-field">
+            <span>비밀번호</span>
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="비밀번호 입력" required />
+          </label>
+          <button id="authSubmit" class="button auth-submit" type="submit">
+            <ion-icon name="log-in-outline" aria-hidden="true"></ion-icon>
+            <span>로그인</span>
+          </button>
+        </form>
+
+        <p id="authMessage" class="auth-message" aria-live="polite">
+          같은 이름과 비밀번호로 언제든 다시 로그인할 수 있어요.
+        </p>
+      </section>
+
+      <main id="appContent" class="layout" hidden>
         <section class="journal-area">
           <div class="section-header">
             <div>
               <p class="section-label">
                 <ion-icon name="calendar-clear-outline" aria-hidden="true"></ion-icon>
-                <span>Weekly Plan</span>
+                <span>Timeline</span>
               </p>
-              <h2>Weekly routine</h2>
-              <p class="section-note">더블클릭하면 해당 칸만 수정할 수 있어요.</p>
+              <h2>Routine timeline</h2>
+              <p class="section-note">실제 날짜 기준으로 이어지고, 더블클릭하면 해당 칸만 수정할 수 있어요.</p>
+            </div>
+            <div class="week-nav" aria-label="Week navigation">
+              <button id="prevWeekButton" class="button button-secondary week-nav-button" type="button" aria-label="Previous week">
+                <ion-icon name="chevron-back-outline" aria-hidden="true"></ion-icon>
+              </button>
+              <p id="weekRangeLabel" class="week-range-label"></p>
+              <button id="nextWeekButton" class="button button-secondary week-nav-button" type="button" aria-label="Next week">
+                <ion-icon name="chevron-forward-outline" aria-hidden="true"></ion-icon>
+              </button>
             </div>
           </div>
+
+          <section id="journalSummary" class="journal-summary card"></section>
 
           <div class="table-card card">
             <div class="table-wrap">
@@ -66,7 +156,7 @@
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>Day</th>
+                    <th>Date</th>
                     <th>Morning routine</th>
                     <th>Evening cleanse</th>
                     <th>Afternoon/Evening skincare</th>
@@ -81,6 +171,7 @@
           </div>
 
           <div id="mobileCards" class="mobile-cards"></div>
+          <input id="importFileInput" type="file" accept="application/json,.json" hidden />
         </section>
 
         <aside class="sidebar">
@@ -136,6 +227,7 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
     <script
       type="module"
