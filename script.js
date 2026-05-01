@@ -6,6 +6,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_xruzoF0QoYwU5V7nHspv1g_yfICa38n";
 const TIMELINE_WINDOW_DAYS = 21;
 const TIMELINE_APPEND_DAYS = 7;
 const KOREAN_WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const ACTIVE_VIEW_KEY = "my-skin-journal-active-view";
+const ACTIVE_SKIN_SECTION_KEY = "my-skin-journal-active-skin-section";
 
 const legacySampleRoutine = [
   {
@@ -79,6 +81,7 @@ const saveStatus = document.getElementById("saveStatus");
 const themeToggle = document.getElementById("themeToggle");
 const settingsButton = document.getElementById("settingsButton");
 const settingsPanel = document.getElementById("settingsPanel");
+const duplicateWeekButton = document.getElementById("duplicateWeekButton");
 const exportButton = document.getElementById("exportButton");
 const importButton = document.getElementById("importButton");
 const importFileInput = document.getElementById("importFileInput");
@@ -86,6 +89,47 @@ const prevWeekButton = document.getElementById("prevWeekButton");
 const nextWeekButton = document.getElementById("nextWeekButton");
 const weekRangeLabel = document.getElementById("weekRangeLabel");
 const journalSummary = document.getElementById("journalSummary");
+const skinVideoForm = document.getElementById("skinVideoForm");
+const skinVideoUrlInput = document.getElementById("skinVideoUrlInput");
+const skinVideoTitleInput = document.getElementById("skinVideoTitleInput");
+const skinVideoNoteInput = document.getElementById("skinVideoNoteInput");
+const skinVideoPreview = document.getElementById("skinVideoPreview");
+const skinVideoList = document.getElementById("skinVideoList");
+const skinRoutineTab = document.getElementById("skinRoutineTab");
+const skinProductsTab = document.getElementById("skinProductsTab");
+const skinRoutineSection = document.getElementById("skinRoutineSection");
+const skinProductsSection = document.getElementById("skinProductsSection");
+const skinProductMatrix = document.getElementById("skinProductMatrix");
+const skinProductForm = document.getElementById("skinProductForm");
+const skinProductTarget = document.getElementById("skinProductTarget");
+const skinProductNameInput = document.getElementById("skinProductNameInput");
+const skinProductBrandInput = document.getElementById("skinProductBrandInput");
+const skinProductCategoryInput = document.getElementById("skinProductCategoryInput");
+const skinProductPriceInput = document.getElementById("skinProductPriceInput");
+const skinProductLinkInput = document.getElementById("skinProductLinkInput");
+const skinProductStatusInput = document.getElementById("skinProductStatusInput");
+const skinProductNoteInput = document.getElementById("skinProductNoteInput");
+const skinProductImageZone = document.getElementById("skinProductImageZone");
+const skinProductImagePreview = document.getElementById("skinProductImagePreview");
+const skinProductImageInput = document.getElementById("skinProductImageInput");
+const skinViewTab = document.getElementById("skinViewTab");
+const bodyViewTab = document.getElementById("bodyViewTab");
+const skinView = document.getElementById("skinView");
+const bodyView = document.getElementById("bodyView");
+const bodyHero = document.getElementById("bodyHero");
+const heightInput = document.getElementById("heightInput");
+const ageInput = document.getElementById("ageInput");
+const sexInput = document.getElementById("sexInput");
+const sexButtons = sexInput ? Array.from(sexInput.querySelectorAll("[data-sex-value]")) : [];
+const targetWeightInput = document.getElementById("targetWeightInput");
+const bodyEntryForm = document.getElementById("bodyEntryForm");
+const bodyWeightInput = document.getElementById("bodyWeightInput");
+const bodyDateInput = document.getElementById("bodyDateInput");
+const bodyDateToggle = document.getElementById("bodyDateToggle");
+const bodyCalendarPanel = document.getElementById("bodyCalendarPanel");
+const bodyNoteInput = document.getElementById("bodyNoteInput");
+const bodyChart = document.getElementById("bodyChart");
+const bodyHistory = document.getElementById("bodyHistory");
 const authCard = document.getElementById("authCard");
 const appContent = document.getElementById("appContent");
 const authStatus = document.getElementById("authStatus");
@@ -100,6 +144,8 @@ const signInTab = document.getElementById("signInTab");
 const signUpTab = document.getElementById("signUpTab");
 
 let routineData = loadRoutine();
+let bodyData = loadBodyData();
+let skinLibraryData = loadSkinLibraryData();
 let currentTheme = loadTheme();
 let mobileOpenDay = getTodayIndex();
 let mobileEditDay = null;
@@ -110,12 +156,34 @@ let currentSessionToken = loadSessionToken();
 let remoteSaveTimer = null;
 let visibleWeekStart = 0;
 let isSettingsOpen = false;
+let activeView = loadActiveView();
+let activeSkinSection = loadActiveSkinSection();
+let fallbackClipboard = "";
+let contextMenuState = null;
+let longPressTimer = null;
+let isBodyCalendarOpen = false;
+let bodyCalendarMonth = getWeekStartDateKey().slice(0, 7);
+let skinVideoPreviewState = null;
+let skinVideoPreviewTimer = null;
+let skinProductStatus = "interested";
+let skinProductImageData = "";
+let skinProductTargetCell = { season: "spring", skinType: "combo" };
+const SKIN_SEASONS = [
+  { value: "spring", label: "봄", icon: "leaf-outline" },
+  { value: "summer", label: "여름", icon: "sunny-outline" },
+  { value: "fall", label: "가을", icon: "leaf-outline" },
+  { value: "winter", label: "겨울", icon: "snow-outline" },
+];
+const SKIN_TYPES = [
+  { value: "combo", label: "수부지 / 복합성" },
+];
 const moodOptions = [
   { value: "calm", label: "Calm", icon: "leaf-outline" },
   { value: "glowy", label: "Glowy", icon: "sparkles-outline" },
   { value: "dry", label: "Dry", icon: "water-outline" },
   { value: "sensitive", label: "Sensitive", icon: "rose-outline" },
 ];
+const cellContextMenu = createCellContextMenu();
 
 function normalizeMorningRoutine(morning) {
   if (typeof morning !== "string" || !morning.includes("나이아신아마이드")) {
@@ -165,6 +233,14 @@ function addDays(dateKey, days) {
   return formatDateKey(date);
 }
 
+function getWeekStartDateKey(dateKey = getTodayDateKey()) {
+  const date = parseDateKey(dateKey);
+  const day = date.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diffToMonday);
+  return formatDateKey(date);
+}
+
 function getWeekdayLabel(dateKey) {
   return KOREAN_WEEKDAYS[parseDateKey(dateKey).getDay()];
 }
@@ -172,6 +248,198 @@ function getWeekdayLabel(dateKey) {
 function formatDateLabel(dateKey) {
   const date = parseDateKey(dateKey);
   return `${date.getMonth() + 1}.${date.getDate()}`;
+}
+
+function formatCalendarDateLabel(dateKey) {
+  const date = parseDateKey(dateKey);
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(
+    date.getDate()
+  ).padStart(2, "0")}`;
+}
+
+function formatCalendarMonthLabel(monthKey) {
+  const [year, month] = monthKey.split("-").map(Number);
+  return `${year}.${String(month).padStart(2, "0")}`;
+}
+
+function shiftMonth(monthKey, delta) {
+  const [year, month] = monthKey.split("-").map(Number);
+  const date = new Date(year, month - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function normalizeDecimalInput(value) {
+  return String(value || "")
+    .trim()
+    .replace(",", ".")
+    .replace(/[^0-9.]/g, "")
+    .replace(/(\..*)\./g, "$1");
+}
+
+function createSkinVideoId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function extractYouTubeVideoId(url) {
+  if (typeof url !== "string" || !url.trim()) {
+    return "";
+  }
+
+  try {
+    const parsedUrl = new URL(url.trim());
+    const host = parsedUrl.hostname.replace(/^www\./, "");
+
+    if (host === "youtu.be") {
+      return parsedUrl.pathname.slice(1).split("/")[0];
+    }
+
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (parsedUrl.pathname === "/watch") {
+        return parsedUrl.searchParams.get("v") || "";
+      }
+
+      if (parsedUrl.pathname.startsWith("/shorts/")) {
+        return parsedUrl.pathname.split("/")[2] || "";
+      }
+
+      if (parsedUrl.pathname.startsWith("/embed/")) {
+        return parsedUrl.pathname.split("/")[2] || "";
+      }
+    }
+  } catch (error) {
+    return "";
+  }
+
+  return "";
+}
+
+function buildYouTubeWatchUrl(videoId) {
+  return `https://www.youtube.com/watch?v=${videoId}`;
+}
+
+function buildYouTubeEmbedUrl(videoId) {
+  return `https://www.youtube.com/embed/${videoId}`;
+}
+
+function buildYouTubeThumbnailUrl(videoId) {
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function fetchYouTubeTitle(videoId) {
+  if (!videoId) {
+    return "";
+  }
+
+  try {
+    const response = await fetch(
+      `https://www.youtube.com/oembed?url=${encodeURIComponent(
+        buildYouTubeWatchUrl(videoId)
+      )}&format=json`
+    );
+
+    if (!response.ok) {
+      throw new Error(`oEmbed request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return typeof data.title === "string" ? data.title : "";
+  } catch (error) {
+    console.warn("Failed to fetch YouTube title:", error);
+    return "";
+  }
+}
+
+function renderSkinVideoPreview() {
+  if (!skinVideoPreviewState?.videoId) {
+    skinVideoPreview.hidden = true;
+    skinVideoPreview.innerHTML = "";
+    return;
+  }
+
+  const previewTitle =
+    skinVideoTitleInput.value.trim() ||
+    skinVideoPreviewState.youtubeTitle ||
+    "YouTube video preview";
+  const previewNote = skinVideoNoteInput.value.trim();
+
+  skinVideoPreview.hidden = false;
+  skinVideoPreview.innerHTML = `
+    <div class="skin-video-preview-frame">
+      <iframe
+        src="${buildYouTubeEmbedUrl(skinVideoPreviewState.videoId)}"
+        title="${escapeHtml(previewTitle)}"
+        loading="lazy"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+      ></iframe>
+    </div>
+    <div class="skin-video-preview-copy">
+      <p class="summary-kicker">Preview</p>
+      <h3>${escapeHtml(previewTitle)}</h3>
+      ${
+        skinVideoPreviewState.youtubeTitle
+          ? `<p class="skin-video-source-title">${escapeHtml(
+              skinVideoPreviewState.youtubeTitle
+            )}</p>`
+          : `<p class="skin-video-source-title is-muted">${
+              skinVideoPreviewState.isLoading ? "영상 제목 불러오는 중..." : "영상 제목을 불러오지 못했어요."
+            }</p>`
+      }
+      ${
+        previewNote
+          ? `<p class="skin-video-preview-note">${escapeHtml(previewNote)}</p>`
+          : '<p class="skin-video-preview-note is-muted">개인 제목이나 메모를 남겨두면 나중에 찾기 쉬워져요.</p>'
+      }
+    </div>
+  `;
+}
+
+async function syncSkinVideoPreview() {
+  const videoId = extractYouTubeVideoId(skinVideoUrlInput.value);
+
+  if (!videoId) {
+    skinVideoPreviewState = null;
+    renderSkinVideoPreview();
+    return;
+  }
+
+  if (skinVideoPreviewState?.videoId !== videoId) {
+    skinVideoPreviewState = {
+      videoId,
+      youtubeTitle: "",
+      isLoading: true,
+    };
+    renderSkinVideoPreview();
+  }
+
+  const youtubeTitle = await fetchYouTubeTitle(videoId);
+  if (!skinVideoPreviewState || skinVideoPreviewState.videoId !== videoId) {
+    return;
+  }
+
+  skinVideoPreviewState = {
+    videoId,
+    youtubeTitle,
+    isLoading: false,
+  };
+  renderSkinVideoPreview();
+}
+
+function queueSkinVideoPreviewSync() {
+  window.clearTimeout(skinVideoPreviewTimer);
+  skinVideoPreviewTimer = window.setTimeout(() => {
+    syncSkinVideoPreview();
+  }, 180);
 }
 
 function createEmptyEntry(dateKey) {
@@ -187,8 +455,135 @@ function createEmptyEntry(dateKey) {
   };
 }
 
-function createEmptyTimeline(startDateKey = getTodayDateKey(), days = TIMELINE_WINDOW_DAYS) {
+function createEmptyTimeline(
+  startDateKey = getWeekStartDateKey(),
+  days = TIMELINE_WINDOW_DAYS
+) {
   return Array.from({ length: days }, (_, index) => createEmptyEntry(addDays(startDateKey, index)));
+}
+
+function createEmptyBodyData() {
+  return {
+    heightCm: "",
+    age: "",
+    sex: "",
+    targetWeightKg: "",
+    entries: [],
+  };
+}
+
+function createEmptySkinLibraryData() {
+  return {
+    videos: [],
+    products: [],
+  };
+}
+
+function normalizeBodyData(data) {
+  if (!data || typeof data !== "object") {
+    return createEmptyBodyData();
+  }
+
+  const entries = Array.isArray(data.entries)
+    ? data.entries
+        .filter((entry) => entry && typeof entry.date === "string")
+        .map((entry) => ({
+          date: entry.date,
+          weightKg:
+            typeof entry.weightKg === "string" || typeof entry.weightKg === "number"
+              ? String(entry.weightKg)
+              : "",
+          note: typeof entry.note === "string" ? entry.note : "",
+        }))
+        .sort((a, b) => b.date.localeCompare(a.date))
+    : [];
+
+  return {
+    heightCm:
+      typeof data.heightCm === "string" || typeof data.heightCm === "number"
+        ? String(data.heightCm)
+        : "",
+    age:
+      typeof data.age === "string" || typeof data.age === "number"
+        ? String(data.age)
+        : "",
+    sex: data.sex === "female" || data.sex === "male" ? data.sex : "",
+    targetWeightKg:
+      typeof data.targetWeightKg === "string" || typeof data.targetWeightKg === "number"
+        ? String(data.targetWeightKg)
+        : "",
+    entries,
+  };
+}
+
+function normalizeSkinLibraryData(data) {
+  if (!data || typeof data !== "object") {
+    return createEmptySkinLibraryData();
+  }
+
+  const videos = Array.isArray(data.videos)
+    ? data.videos
+        .filter((entry) => entry && typeof entry.videoId === "string")
+        .map((entry) => ({
+          id:
+            typeof entry.id === "string" && entry.id.trim()
+              ? entry.id
+              : `${entry.videoId}-${entry.addedAt || Date.now()}`,
+          url: typeof entry.url === "string" ? entry.url : "",
+          videoId: entry.videoId,
+          customTitle: typeof entry.customTitle === "string" ? entry.customTitle : "",
+          note: typeof entry.note === "string" ? entry.note : "",
+          youtubeTitle: typeof entry.youtubeTitle === "string" ? entry.youtubeTitle : "",
+          thumbnailUrl: typeof entry.thumbnailUrl === "string" ? entry.thumbnailUrl : "",
+          addedAt: typeof entry.addedAt === "string" ? entry.addedAt : new Date().toISOString(),
+        }))
+        .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
+    : [];
+
+  return {
+    videos,
+    products: Array.isArray(data.products)
+      ? data.products
+          .filter((entry) => entry && typeof entry.id === "string")
+          .map((entry) => ({
+            id: entry.id,
+            name: typeof entry.name === "string" ? entry.name : "",
+            brand: typeof entry.brand === "string" ? entry.brand : "",
+            category: typeof entry.category === "string" ? entry.category : "",
+            price: typeof entry.price === "string" || typeof entry.price === "number" ? String(entry.price) : "",
+            link: typeof entry.link === "string" ? entry.link : "",
+            season: SKIN_SEASONS.some((item) => item.value === entry.season) ? entry.season : "spring",
+            skinType: SKIN_TYPES.some((item) => item.value === entry.skinType) ? entry.skinType : "combo",
+            status:
+              entry.status === "interested" ||
+              entry.status === "buy-next" ||
+              entry.status === "bought" ||
+              entry.status === "testing"
+                ? entry.status
+                : "interested",
+            note: typeof entry.note === "string" ? entry.note : "",
+            imageDataUrl: typeof entry.imageDataUrl === "string" ? entry.imageDataUrl : "",
+            addedAt: typeof entry.addedAt === "string" ? entry.addedAt : new Date().toISOString(),
+          }))
+          .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
+      : [],
+  };
+}
+
+function normalizeAppData(data) {
+  if (data && typeof data === "object" && !Array.isArray(data) && data.skinTimeline) {
+    return {
+      skinTimeline: normalizeRoutineData(data.skinTimeline),
+      bodyProgress: normalizeBodyData(data.bodyProgress),
+      skinLibrary: normalizeSkinLibraryData(data.skinLibrary),
+    };
+  }
+
+  return {
+    skinTimeline: normalizeRoutineData(data),
+    bodyProgress: createEmptyBodyData(),
+    skinLibrary: createEmptySkinLibraryData(),
+  };
 }
 
 function isLegacyWeeklyData(data) {
@@ -218,6 +613,13 @@ function hasMeaningfulRoutine(data) {
   );
 }
 
+function hasMeaningfulSkinLibrary(data) {
+  return (
+    (Array.isArray(data?.videos) && data.videos.length > 0) ||
+    (Array.isArray(data?.products) && data.products.length > 0)
+  );
+}
+
 function normalizeTimelineEntries(entries) {
   if (!Array.isArray(entries)) {
     return createEmptyTimeline();
@@ -241,7 +643,7 @@ function normalizeTimelineEntries(entries) {
 }
 
 function migrateLegacyRoutineToTimeline(data) {
-  const baseDate = getTodayDateKey();
+  const baseDate = getWeekStartDateKey();
   const source = Array.isArray(data) && data.length ? data : legacySampleRoutine;
   const entries = source.map((entry, index) => ({
     date: addDays(baseDate, index),
@@ -263,8 +665,9 @@ function ensureTimelineWindow(entries) {
   }
 
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const mondayStart = getWeekStartDateKey(sorted[0].date);
   const timeline = [];
-  const firstDate = sorted[0].date;
+  const firstDate = mondayStart < sorted[0].date ? mondayStart : sorted[0].date;
   const targetLength = Math.max(TIMELINE_WINDOW_DAYS, sorted.length);
   const entryMap = new Map(sorted.map((entry) => [entry.date, entry]));
 
@@ -274,7 +677,17 @@ function ensureTimelineWindow(entries) {
   }
 
   const todayKey = getTodayDateKey();
+  const currentWeekStart = getWeekStartDateKey(todayKey);
+
+  while (timeline[0].date > currentWeekStart) {
+    timeline.unshift(createEmptyEntry(addDays(timeline[0].date, -1)));
+  }
+
   while (timeline[timeline.length - 1].date < todayKey) {
+    timeline.push(createEmptyEntry(addDays(timeline[timeline.length - 1].date, 1)));
+  }
+
+  while (timeline[timeline.length - 1].date < addDays(currentWeekStart, 6)) {
     timeline.push(createEmptyEntry(addDays(timeline[timeline.length - 1].date, 1)));
   }
 
@@ -305,12 +718,42 @@ function loadRoutine() {
     }
 
     const parsed = JSON.parse(saved);
-    const normalized = normalizeRoutineData(parsed);
+    const normalized = normalizeAppData(parsed);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-    return normalized;
+    return normalized.skinTimeline;
   } catch (error) {
     console.warn("Failed to read saved routine:", error);
     return createEmptyTimeline();
+  }
+}
+
+function loadBodyData() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+      return createEmptyBodyData();
+    }
+
+    const parsed = JSON.parse(saved);
+    return normalizeAppData(parsed).bodyProgress;
+  } catch (error) {
+    console.warn("Failed to read body progress:", error);
+    return createEmptyBodyData();
+  }
+}
+
+function loadSkinLibraryData() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+      return createEmptySkinLibraryData();
+    }
+
+    const parsed = JSON.parse(saved);
+    return normalizeAppData(parsed).skinLibrary;
+  } catch (error) {
+    console.warn("Failed to read skin library:", error);
+    return createEmptySkinLibraryData();
   }
 }
 
@@ -320,6 +763,16 @@ function loadTheme() {
     return savedTheme;
   }
   return "dark";
+}
+
+function loadActiveView() {
+  const saved = localStorage.getItem(ACTIVE_VIEW_KEY);
+  return saved === "body" ? "body" : "skin";
+}
+
+function loadActiveSkinSection() {
+  const saved = localStorage.getItem(ACTIVE_SKIN_SECTION_KEY);
+  return saved === "products" ? "products" : "routine";
 }
 
 function loadSessionToken() {
@@ -363,6 +816,15 @@ function toggleTheme() {
   applyTheme(nextTheme);
 }
 
+function buildAppPayload() {
+  return {
+    version: 4,
+    skinTimeline: routineData,
+    bodyProgress: bodyData,
+    skinLibrary: skinLibraryData,
+  };
+}
+
 function setSettingsOpen(nextState) {
   isSettingsOpen = nextState;
   settingsPanel.hidden = !nextState;
@@ -371,6 +833,262 @@ function setSettingsOpen(nextState) {
 
 function toggleSettingsMenu() {
   setSettingsOpen(!isSettingsOpen);
+}
+
+function setBodyCalendarDate(dateKey) {
+  const resolvedDate = dateKey || getTodayDateKey();
+  bodyDateInput.dataset.value = resolvedDate;
+  bodyDateInput.value = formatCalendarDateLabel(resolvedDate);
+  bodyCalendarMonth = resolvedDate.slice(0, 7);
+}
+
+function setBodyCalendarOpen(nextState) {
+  isBodyCalendarOpen = nextState;
+  bodyCalendarPanel.hidden = !nextState;
+  bodyDateToggle.setAttribute("aria-expanded", String(nextState));
+  if (nextState) {
+    renderBodyCalendar();
+  }
+}
+
+function renderBodyCalendar() {
+  const selectedDate = bodyDateInput.dataset.value || getTodayDateKey();
+  const [year, month] = bodyCalendarMonth.split("-").map(Number);
+  const firstOfMonth = new Date(year, month - 1, 1);
+  const startDay = firstOfMonth.getDay();
+  const mondayOffset = startDay === 0 ? 6 : startDay - 1;
+  const gridStart = new Date(year, month - 1, 1 - mondayOffset);
+  const todayKey = getTodayDateKey();
+
+  const days = Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    const dateKey = formatDateKey(date);
+    const isCurrentMonth = date.getMonth() === month - 1;
+    return { dateKey, day: date.getDate(), isCurrentMonth };
+  });
+
+  bodyCalendarPanel.innerHTML = `
+    <div class="body-calendar-head">
+      <button class="body-calendar-nav" type="button" data-calendar-nav="-1" aria-label="Previous month">
+        <ion-icon name="chevron-back-outline" aria-hidden="true"></ion-icon>
+      </button>
+      <strong>${formatCalendarMonthLabel(bodyCalendarMonth)}</strong>
+      <button class="body-calendar-nav" type="button" data-calendar-nav="1" aria-label="Next month">
+        <ion-icon name="chevron-forward-outline" aria-hidden="true"></ion-icon>
+      </button>
+    </div>
+    <div class="body-calendar-weekdays">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+    </div>
+    <div class="body-calendar-grid">
+      ${days
+        .map(
+          ({ dateKey, day, isCurrentMonth }) => `
+            <button
+              class="body-calendar-day${isCurrentMonth ? "" : " is-outside"}${
+                dateKey === selectedDate ? " is-selected" : ""
+              }${dateKey === todayKey ? " is-today" : ""}"
+              type="button"
+              data-date-key="${dateKey}"
+            >
+              ${day}
+            </button>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+
+  bodyCalendarPanel.querySelectorAll("[data-calendar-nav]").forEach((button) => {
+    button.addEventListener("click", () => {
+      bodyCalendarMonth = shiftMonth(bodyCalendarMonth, Number(button.dataset.calendarNav));
+      renderBodyCalendar();
+    });
+  });
+
+  bodyCalendarPanel.querySelectorAll("[data-date-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setBodyCalendarDate(button.dataset.dateKey);
+      setBodyCalendarOpen(false);
+    });
+  });
+}
+
+function createCellContextMenu() {
+  const menu = document.createElement("div");
+  menu.className = "cell-context-menu";
+  menu.hidden = true;
+  menu.innerHTML = `
+    <button class="context-menu-item" type="button" data-action="copy">
+      <ion-icon name="copy-outline" aria-hidden="true"></ion-icon>
+      <span>Copy</span>
+    </button>
+    <button class="context-menu-item" type="button" data-action="paste">
+      <ion-icon name="clipboard-outline" aria-hidden="true"></ion-icon>
+      <span>Paste</span>
+    </button>
+    <button class="context-menu-item" type="button" data-action="clear">
+      <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      <span>Clear</span>
+    </button>
+  `;
+
+  menu.addEventListener("click", async (event) => {
+    const button = event.target.closest(".context-menu-item");
+    if (!button || !contextMenuState) {
+      return;
+    }
+
+    const action = button.dataset.action;
+    if (action === "copy") {
+      await copyFieldValue(contextMenuState);
+    } else if (action === "paste") {
+      await pasteFieldValue(contextMenuState);
+    } else if (action === "clear") {
+      clearFieldValue(contextMenuState);
+    }
+    closeCellContextMenu();
+  });
+
+  document.body.appendChild(menu);
+  return menu;
+}
+
+function getFieldTargetMeta(target) {
+  const editableTarget = target.closest("[data-index][data-field]");
+  if (!editableTarget) {
+    return null;
+  }
+
+  return {
+    element: editableTarget,
+    index: Number(editableTarget.dataset.index),
+    field: editableTarget.dataset.field,
+    isTextarea: editableTarget.matches("textarea"),
+  };
+}
+
+function openCellContextMenu(event, meta) {
+  event.preventDefault();
+  contextMenuState = meta;
+  cellContextMenu.hidden = false;
+  cellContextMenu.style.left = `${Math.min(event.clientX, window.innerWidth - 188)}px`;
+  cellContextMenu.style.top = `${Math.min(event.clientY, window.innerHeight - 148)}px`;
+}
+
+function closeCellContextMenu() {
+  contextMenuState = null;
+  cellContextMenu.hidden = true;
+}
+
+async function writeClipboardText(text) {
+  fallbackClipboard = text;
+  if (!navigator.clipboard?.writeText) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (error) {
+    console.warn("Clipboard write failed, using fallback clipboard.", error);
+  }
+}
+
+async function readClipboardText() {
+  if (navigator.clipboard?.readText) {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (typeof text === "string") {
+        fallbackClipboard = text;
+        return text;
+      }
+    } catch (error) {
+      console.warn("Clipboard read failed, using fallback clipboard.", error);
+    }
+  }
+
+  return fallbackClipboard;
+}
+
+async function copyFieldValue(meta) {
+  const text = meta.isTextarea
+    ? meta.element.value
+    : routineData[meta.index]?.[meta.field] || "";
+  await writeClipboardText(text);
+}
+
+async function pasteFieldValue(meta) {
+  const text = await readClipboardText();
+  if (typeof text !== "string") {
+    return;
+  }
+
+  if (meta.isTextarea) {
+    meta.element.value = text;
+    routineData[meta.index][meta.field] = text.trim();
+    saveRoutine("붙여넣기 완료");
+    meta.element.focus();
+    return;
+  }
+
+  routineData[meta.index][meta.field] = text.trim();
+  saveRoutine("붙여넣기 완료");
+  render();
+}
+
+function clearFieldValue(meta) {
+  if (meta.isTextarea) {
+    meta.element.value = "";
+    routineData[meta.index][meta.field] = "";
+    saveRoutine("칸 내용을 비웠어요.");
+    meta.element.focus();
+    return;
+  }
+
+  routineData[meta.index][meta.field] = "";
+  saveRoutine("칸 내용을 비웠어요.");
+  render();
+}
+
+function attachContextMenu(element) {
+  element.addEventListener("contextmenu", (event) => {
+    const meta = getFieldTargetMeta(event.target);
+    if (!meta) {
+      return;
+    }
+    openCellContextMenu(event, meta);
+  });
+
+  element.addEventListener("touchstart", (event) => {
+    const touch = event.touches[0];
+    if (!touch) {
+      return;
+    }
+
+    longPressTimer = window.setTimeout(() => {
+      const meta = getFieldTargetMeta(event.target);
+      if (!meta) {
+        return;
+      }
+      openCellContextMenu(
+        {
+          preventDefault() {},
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+        },
+        meta
+      );
+    }, 420);
+  });
+
+  const cancelLongPress = () => {
+    window.clearTimeout(longPressTimer);
+  };
+
+  element.addEventListener("touchend", cancelLongPress);
+  element.addEventListener("touchmove", cancelLongPress);
+  element.addEventListener("touchcancel", cancelLongPress);
 }
 
 function flashStatus(message, stateClass = "") {
@@ -393,7 +1111,13 @@ function flashStatus(message, stateClass = "") {
 
 function saveRoutine(message = "로컬에 자동 저장됨", stateClass = "saved") {
   routineData = ensureTimelineWindow(routineData);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(routineData));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(buildAppPayload()));
+  queueRemoteSave();
+  flashStatus(message, stateClass);
+}
+
+function saveBodyProgress(message = "바디 기록 저장됨", stateClass = "saved") {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(buildAppPayload()));
   queueRemoteSave();
   flashStatus(message, stateClass);
 }
@@ -446,15 +1170,24 @@ async function loadRemoteRoutine() {
     return;
   }
 
-  const remoteRoutine = normalizeRoutineData(Array.isArray(data) ? data : []);
+  const remoteAppData = normalizeAppData(data);
 
-  if (!hasMeaningfulRoutine(remoteRoutine) && hasMeaningfulRoutine(routineData)) {
+  if (
+    !hasMeaningfulRoutine(remoteAppData.skinTimeline) &&
+    !remoteAppData.bodyProgress.entries.length &&
+    !hasMeaningfulSkinLibrary(remoteAppData.skinLibrary) &&
+    (hasMeaningfulRoutine(routineData) ||
+      bodyData.entries.length > 0 ||
+      hasMeaningfulSkinLibrary(skinLibraryData))
+  ) {
     saveRoutine("현재 기기 루틴을 계정에 저장했어요.");
     return;
   }
 
-  routineData = remoteRoutine;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(routineData));
+  routineData = remoteAppData.skinTimeline;
+  bodyData = remoteAppData.bodyProgress;
+  skinLibraryData = remoteAppData.skinLibrary;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(buildAppPayload()));
 }
 
 async function saveRoutineRemote() {
@@ -464,7 +1197,7 @@ async function saveRoutineRemote() {
 
   const { error } = await supabaseClient.rpc("skin_journal_save_routine", {
     p_token: currentSessionToken,
-    p_routine: routineData,
+    p_routine: buildAppPayload(),
   });
 
   if (error) {
@@ -535,7 +1268,9 @@ async function handleAuthSubmit(event) {
 
   if (authMode === "sign-up") {
     routineData = createEmptyTimeline();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(routineData));
+    bodyData = createEmptyBodyData();
+    skinLibraryData = createEmptySkinLibraryData();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(buildAppPayload()));
     await saveRoutineRemote();
   } else {
     await loadRemoteRoutine();
@@ -568,6 +1303,7 @@ async function handleLogout() {
   currentUser = null;
   localStorage.removeItem(SESSION_STORAGE_KEY);
   routineData = loadRoutine();
+  bodyData = loadBodyData();
   visibleWeekStart = getWeekStartIndex();
   mobileOpenDay = getTodayIndex();
   mobileEditDay = null;
@@ -617,7 +1353,10 @@ function getTodayIndex() {
 }
 
 function getWeekStartIndex(index = getTodayIndex()) {
-  return Math.max(0, Math.floor(index / 7) * 7);
+  const targetDate = routineData[index]?.date || getTodayDateKey();
+  const mondayKey = getWeekStartDateKey(targetDate);
+  const foundIndex = routineData.findIndex((entry) => entry.date === mondayKey);
+  return foundIndex >= 0 ? foundIndex : Math.max(0, index);
 }
 
 function getMoodMeta(value) {
@@ -754,12 +1493,396 @@ function renderJournalSummary() {
   });
 }
 
+function renderSkinVideoList() {
+  if (!skinLibraryData.videos.length) {
+    skinVideoList.innerHTML = `
+      <article class="skin-video-empty">
+        <ion-icon name="logo-youtube" aria-hidden="true"></ion-icon>
+        <div>
+          <strong>아직 저장한 스킨케어 영상이 없어요.</strong>
+          <p>링크를 넣고 개인 제목이나 메모를 붙여두면, 나중에 루틴 참고용으로 다시 보기 쉬워집니다.</p>
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  skinVideoList.innerHTML = skinLibraryData.videos
+    .map(
+      (video) => `
+        <article class="skin-video-card card">
+          <div class="skin-video-card-frame">
+            <iframe
+              src="${buildYouTubeEmbedUrl(video.videoId)}"
+              title="${escapeHtml(
+                video.customTitle || video.youtubeTitle || "Saved skincare video"
+              )}"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            ></iframe>
+          </div>
+          <div class="skin-video-card-copy">
+            <div class="skin-video-card-head">
+              <div>
+                <p class="summary-kicker">Saved video</p>
+                <h3>${escapeHtml(
+                  video.customTitle || video.youtubeTitle || "Untitled reference"
+                )}</h3>
+                ${
+                  video.youtubeTitle && video.customTitle
+                    ? `<p class="skin-video-source-title">${escapeHtml(
+                        video.youtubeTitle
+                      )}</p>`
+                    : ""
+                }
+              </div>
+              <div class="skin-video-card-actions">
+                <a
+                  class="button button-secondary skin-video-link-button"
+                  href="${video.url || buildYouTubeWatchUrl(video.videoId)}"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <ion-icon name="open-outline" aria-hidden="true"></ion-icon>
+                  <span>Open</span>
+                </a>
+                <button
+                  class="button button-secondary skin-video-delete-button"
+                  type="button"
+                  data-video-id="${video.id}"
+                >
+                  <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+            ${
+              video.note
+                ? `<p class="skin-video-note">${escapeHtml(video.note)}</p>`
+                : '<p class="skin-video-note is-muted">메모 없음</p>'
+            }
+          </div>
+        </article>
+      `
+    )
+    .join("");
+
+  skinVideoList.querySelectorAll("[data-video-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      skinLibraryData.videos = skinLibraryData.videos.filter(
+        (video) => video.id !== button.dataset.videoId
+      );
+      saveRoutine("저장한 영상을 삭제했어요.");
+      renderSkinVideoList();
+    });
+  });
+}
+
+function getProductStatusLabel(status) {
+  const labels = {
+    interested: "Interested",
+    "buy-next": "Buy next",
+    bought: "Bought",
+    testing: "Testing",
+  };
+  return labels[status] || "Interested";
+}
+
+function getSeasonLabel(season) {
+  return SKIN_SEASONS.find((item) => item.value === season)?.label || "봄";
+}
+
+function getSkinTypeLabel(skinType) {
+  return SKIN_TYPES.find((item) => item.value === skinType)?.label || "수부지 / 복합성";
+}
+
+function setSkinProductStatus(status) {
+  skinProductStatus =
+    status === "buy-next" || status === "bought" || status === "testing" ? status : "interested";
+
+  if (!skinProductStatusInput) {
+    return;
+  }
+
+  skinProductStatusInput.querySelectorAll("[data-product-status]").forEach((button) => {
+    const isActive = button.dataset.productStatus === skinProductStatus;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function renderSkinProductImagePreview() {
+  if (!skinProductImageData) {
+    skinProductImagePreview.hidden = true;
+    skinProductImagePreview.innerHTML = "";
+    return;
+  }
+
+  skinProductImagePreview.hidden = false;
+  skinProductImagePreview.innerHTML = `
+    <img src="${skinProductImageData}" alt="Selected product preview" />
+    <button id="skinProductImageClearButton" class="skin-product-image-clear" type="button">
+      <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      <span>Remove</span>
+    </button>
+  `;
+
+  document.getElementById("skinProductImageClearButton").addEventListener("click", () => {
+    skinProductImageData = "";
+    renderSkinProductImagePreview();
+  });
+}
+
+function setSkinProductTargetCell(season, skinType) {
+  skinProductTargetCell = {
+    season: SKIN_SEASONS.some((item) => item.value === season) ? season : "spring",
+    skinType: SKIN_TYPES.some((item) => item.value === skinType) ? skinType : "combo",
+  };
+
+  skinProductTarget.textContent = `${getSkinTypeLabel(skinProductTargetCell.skinType)} · ${getSeasonLabel(
+    skinProductTargetCell.season
+  )}`;
+}
+
+function renderSkinProductList() {
+  const seasonHeaders = SKIN_SEASONS.map(
+    (season) => `
+      <div class="skin-season-header">
+        <span>${season.label}</span>
+        <ion-icon name="${season.icon}" aria-hidden="true"></ion-icon>
+      </div>
+    `
+  ).join("");
+
+  const rows = SKIN_TYPES.map((skinType) => {
+    const cells = SKIN_SEASONS.map((season) => {
+      const products = skinLibraryData.products.filter(
+        (product) => product.season === season.value && product.skinType === skinType.value
+      );
+
+      return `
+        <div class="skin-season-cell${
+          skinProductTargetCell.season === season.value &&
+          skinProductTargetCell.skinType === skinType.value
+            ? " is-active"
+            : ""
+        }" data-season="${season.value}" data-skin-type="${skinType.value}">
+          <button class="skin-season-cell-add" type="button" data-season="${season.value}" data-skin-type="${skinType.value}">
+            <ion-icon name="add-outline" aria-hidden="true"></ion-icon>
+            <span>Add</span>
+          </button>
+          <div class="skin-season-cell-list">
+            ${
+              products.length
+                ? products
+                    .map(
+                      (product) => `
+                        <article class="skin-season-product-card">
+                          ${
+                            product.imageDataUrl
+                              ? `<img class="skin-season-product-image" src="${product.imageDataUrl}" alt="${escapeHtml(
+                                  product.name
+                                )}" />`
+                              : ""
+                          }
+                          <div class="skin-season-product-copy">
+                            <p class="summary-kicker">${escapeHtml(
+                              getProductStatusLabel(product.status)
+                            )}</p>
+                            <h3>${escapeHtml(product.name || "Untitled product")}</h3>
+                            <p class="skin-product-meta">
+                              ${[product.brand, product.category, product.price ? `${product.price}` : ""]
+                                .filter(Boolean)
+                                .map((value) => escapeHtml(value))
+                                .join(" · ") || "No extra details"}
+                            </p>
+                            ${
+                              product.note
+                                ? `<p class="skin-product-note">${escapeHtml(product.note)}</p>`
+                                : ""
+                            }
+                          </div>
+                          <div class="skin-product-card-actions">
+                            ${
+                              product.link
+                                ? `
+                                  <a
+                                    class="button button-secondary skin-product-link-button"
+                                    href="${escapeHtml(product.link)}"
+                                    target="_blank"
+                                    rel="noreferrer noopener"
+                                  >
+                                    <ion-icon name="open-outline" aria-hidden="true"></ion-icon>
+                                    <span>Open</span>
+                                  </a>
+                                `
+                                : ""
+                            }
+                            <button
+                              class="button button-secondary skin-product-delete-button"
+                              type="button"
+                              data-product-id="${product.id}"
+                            >
+                              <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </article>
+                      `
+                    )
+                    .join("")
+                : '<p class="skin-season-empty">No products yet</p>'
+            }
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="skin-season-row-label">${skinType.label}</div>
+      ${cells}
+    `;
+  }).join("");
+
+  skinProductMatrix.innerHTML = `
+    <div class="skin-season-corner">피부타입 / 계절</div>
+    ${seasonHeaders}
+    ${rows}
+  `;
+
+  skinProductMatrix.querySelectorAll(".skin-season-cell").forEach((element) => {
+    element.addEventListener("click", (event) => {
+      const season = event.currentTarget.dataset.season;
+      const skinType = event.currentTarget.dataset.skinType;
+      setSkinProductTargetCell(season, skinType);
+      renderSkinProductList();
+    });
+  });
+
+  skinProductMatrix.querySelectorAll(".skin-season-cell-add").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setSkinProductTargetCell(button.dataset.season, button.dataset.skinType);
+      renderSkinProductList();
+    });
+  });
+
+  skinProductMatrix.querySelectorAll("[data-product-id]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      skinLibraryData.products = skinLibraryData.products.filter(
+        (product) => product.id !== button.dataset.productId
+      );
+      saveRoutine("저장한 제품을 삭제했어요.");
+      renderSkinProductList();
+    });
+  });
+
+  renderSkinProductImagePreview();
+}
+
+function handleSkinProductSubmit(event) {
+  event.preventDefault();
+
+  const name = skinProductNameInput.value.trim();
+  if (!name) {
+    skinProductNameInput.reportValidity();
+    return;
+  }
+
+  const nextProduct = {
+    id: createSkinVideoId(),
+    name,
+    brand: skinProductBrandInput.value.trim(),
+    category: skinProductCategoryInput.value.trim(),
+    price: normalizeDecimalInput(skinProductPriceInput.value),
+    link: skinProductLinkInput.value.trim(),
+    season: skinProductTargetCell.season,
+    skinType: skinProductTargetCell.skinType,
+    status: skinProductStatus,
+    note: skinProductNoteInput.value.trim(),
+    imageDataUrl: skinProductImageData,
+    addedAt: new Date().toISOString(),
+  };
+
+  skinLibraryData.products.unshift(nextProduct);
+  saveRoutine("스킨케어 제품을 저장했어요.");
+  skinProductForm.reset();
+  setSkinProductStatus("interested");
+  skinProductImageData = "";
+  renderSkinProductList();
+}
+
+function loadSkinProductImageFromFile(file) {
+  if (!file || !file.type.startsWith("image/")) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    skinProductImageData = typeof reader.result === "string" ? reader.result : "";
+    renderSkinProductImagePreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleSkinProductImagePaste(event) {
+  const items = Array.from(event.clipboardData?.items || []);
+  const imageItem = items.find((item) => item.type.startsWith("image/"));
+  if (!imageItem) {
+    return;
+  }
+
+  event.preventDefault();
+  loadSkinProductImageFromFile(imageItem.getAsFile());
+}
+
+async function handleSkinVideoSubmit(event) {
+  event.preventDefault();
+
+  const rawUrl = skinVideoUrlInput.value.trim();
+  const videoId = extractYouTubeVideoId(rawUrl);
+  const customTitle = skinVideoTitleInput.value.trim();
+  const note = skinVideoNoteInput.value.trim();
+
+  if (!videoId) {
+    skinVideoUrlInput.setCustomValidity("유효한 YouTube 링크를 넣어주세요.");
+    skinVideoUrlInput.reportValidity();
+    skinVideoUrlInput.setCustomValidity("");
+    return;
+  }
+
+  const youtubeTitle =
+    skinVideoPreviewState?.videoId === videoId ? skinVideoPreviewState.youtubeTitle : "";
+
+  const nextVideo = {
+    id: createSkinVideoId(),
+    url: buildYouTubeWatchUrl(videoId),
+    videoId,
+    customTitle,
+    note,
+    youtubeTitle: youtubeTitle || (await fetchYouTubeTitle(videoId)),
+    thumbnailUrl: buildYouTubeThumbnailUrl(videoId),
+    addedAt: new Date().toISOString(),
+  };
+
+  skinLibraryData.videos.unshift(nextVideo);
+  saveRoutine("스킨케어 참고 영상을 저장했어요.");
+  skinVideoForm.reset();
+  skinVideoPreviewState = null;
+  renderSkinVideoPreview();
+  renderSkinVideoList();
+}
+
 function createTextarea(value, index, field, extraClass = "") {
   const textarea = document.createElement("textarea");
   textarea.className = extraClass;
   textarea.value = value;
   textarea.setAttribute("data-index", index);
   textarea.setAttribute("data-field", field);
+  attachContextMenu(textarea);
   return textarea;
 }
 
@@ -785,6 +1908,7 @@ function createRoutineDisplay(value, index, field, isNotes = false) {
   );
   display.dataset.index = index;
   display.dataset.field = field;
+  attachContextMenu(display);
   display.addEventListener("dblclick", () =>
     activateInlineEditor(display, index, field, isNotes)
   );
@@ -1110,18 +2234,27 @@ function renderMobileCards() {
 }
 
 function render() {
-  updateWeekRangeLabel();
-  renderJournalSummary();
-  renderTable();
-  renderMobileCards();
+  renderActiveView();
+  if (activeView === "skin" && activeSkinSection === "routine") {
+    updateWeekRangeLabel();
+    renderJournalSummary();
+    renderSkinVideoPreview();
+    renderSkinVideoList();
+    renderTable();
+    renderMobileCards();
+  }
+  if (activeView === "skin" && activeSkinSection === "products") {
+    renderSkinProductList();
+  }
+  renderBodyProgress();
 }
 
 function exportRoutineJson() {
   setSettingsOpen(false);
   const payload = {
-    version: 2,
+    version: 4,
     exportedAt: new Date().toISOString(),
-    routine: routineData,
+    ...buildAppPayload(),
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
     type: "application/json",
@@ -1129,7 +2262,7 @@ function exportRoutineJson() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `my-skin-journal-${getTodayDateKey()}.json`;
+  link.download = `my-self-care-${getTodayDateKey()}.json`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -1147,9 +2280,10 @@ function importRoutineJson(event) {
   reader.onload = () => {
     try {
       const parsed = JSON.parse(String(reader.result || "{}"));
-      const source = Array.isArray(parsed) ? parsed : parsed.routine;
-      const imported = normalizeRoutineData(source);
-      routineData = imported;
+      const imported = normalizeAppData(parsed.routine || parsed);
+      routineData = imported.skinTimeline;
+      bodyData = imported.bodyProgress;
+      skinLibraryData = imported.skinLibrary;
       visibleWeekStart = getWeekStartIndex();
       mobileOpenDay = getTodayIndex();
       mobileEditDay = null;
@@ -1180,36 +2314,382 @@ function appendMoreDays(count = TIMELINE_APPEND_DAYS, shouldRender = true) {
 }
 
 function showPreviousWeek() {
-  visibleWeekStart = Math.max(0, visibleWeekStart - 7);
+  const currentStartDate = routineData[visibleWeekStart]?.date || getWeekStartDateKey();
+  const previousMonday = addDays(currentStartDate, -7);
+  const foundIndex = routineData.findIndex((entry) => entry.date === previousMonday);
+  visibleWeekStart = foundIndex >= 0 ? foundIndex : 0;
   mobileEditDay = null;
   render();
 }
 
 function showNextWeek() {
-  if (visibleWeekStart + 7 >= routineData.length) {
+  const currentStartDate = routineData[visibleWeekStart]?.date || getWeekStartDateKey();
+  const nextMonday = addDays(currentStartDate, 7);
+
+  while (routineData[routineData.length - 1].date < addDays(nextMonday, 6)) {
     appendMoreDays(TIMELINE_APPEND_DAYS, false);
   }
-  visibleWeekStart += 7;
+
+  const foundIndex = routineData.findIndex((entry) => entry.date === nextMonday);
+  visibleWeekStart = foundIndex >= 0 ? foundIndex : visibleWeekStart;
   mobileEditDay = null;
   render();
 }
 
-document.addEventListener("click", (event) => {
-  if (!isSettingsOpen) {
+function duplicateCurrentWeekToNextWeek() {
+  const currentEntries = getVisibleEntries();
+  if (!currentEntries.length) {
     return;
   }
 
-  if (!event.target.closest(".settings-menu")) {
+  const nextWeekStartDate = addDays(currentEntries[0].entry.date, 7);
+
+  while (routineData[routineData.length - 1].date < addDays(nextWeekStartDate, 6)) {
+    appendMoreDays(TIMELINE_APPEND_DAYS, false);
+  }
+
+  currentEntries.forEach(({ entry }, offset) => {
+    const targetDate = addDays(nextWeekStartDate, offset);
+    const targetIndex = routineData.findIndex((item) => item.date === targetDate);
+    if (targetIndex < 0) {
+      return;
+    }
+
+    routineData[targetIndex] = {
+      ...routineData[targetIndex],
+      morning: entry.morning,
+      eveningCleanse: entry.eveningCleanse,
+      skincare: entry.skincare,
+      extraCare: entry.extraCare,
+      done: false,
+      mood: "",
+      notes: "",
+    };
+  });
+
+  setSettingsOpen(false);
+  saveRoutine("이번 주 루틴을 다음 주로 복사했어요.");
+  visibleWeekStart = routineData.findIndex((entry) => entry.date === nextWeekStartDate);
+  mobileOpenDay = visibleWeekStart;
+  mobileEditDay = null;
+  render();
+}
+
+function setActiveSkinSection(section) {
+  activeSkinSection = section === "products" ? "products" : "routine";
+  localStorage.setItem(ACTIVE_SKIN_SECTION_KEY, activeSkinSection);
+  renderActiveView();
+}
+
+function setActiveView(view) {
+  activeView = view === "body" ? "body" : "skin";
+  localStorage.setItem(ACTIVE_VIEW_KEY, activeView);
+  renderActiveView();
+}
+
+function renderActiveView() {
+  const isSkin = activeView === "skin";
+  const isRoutine = activeSkinSection === "routine";
+  skinView.hidden = !isSkin;
+  bodyView.hidden = isSkin;
+  skinViewTab.classList.toggle("is-active", isSkin);
+  bodyViewTab.classList.toggle("is-active", !isSkin);
+  skinViewTab.setAttribute("aria-pressed", String(isSkin));
+  bodyViewTab.setAttribute("aria-pressed", String(!isSkin));
+  skinRoutineTab.hidden = !isSkin;
+  skinProductsTab.hidden = !isSkin;
+  skinRoutineSection.hidden = !isSkin || !isRoutine;
+  skinProductsSection.hidden = !isSkin || isRoutine;
+  skinRoutineTab.classList.toggle("is-active", isRoutine);
+  skinProductsTab.classList.toggle("is-active", !isRoutine);
+  skinRoutineTab.setAttribute("aria-pressed", String(isRoutine));
+  skinProductsTab.setAttribute("aria-pressed", String(!isRoutine));
+}
+
+function getLatestBodyEntry() {
+  return bodyData.entries[0] || null;
+}
+
+function getBodyChange() {
+  if (bodyData.entries.length < 2) {
+    return "";
+  }
+
+  const latest = Number(bodyData.entries[0].weightKg);
+  const previous = Number(bodyData.entries[1].weightKg);
+  if (Number.isNaN(latest) || Number.isNaN(previous)) {
+    return "";
+  }
+
+  const diff = latest - previous;
+  return `${diff > 0 ? "+" : ""}${diff.toFixed(1)} kg`;
+}
+
+function getBodyBmi() {
+  const latestEntry = getLatestBodyEntry();
+  const heightCm = Number(bodyData.heightCm);
+  const weightKg = Number(latestEntry?.weightKg);
+
+  if (!latestEntry || Number.isNaN(heightCm) || Number.isNaN(weightKg) || heightCm <= 0) {
+    return "";
+  }
+
+  const heightM = heightCm / 100;
+  return (weightKg / (heightM * heightM)).toFixed(1);
+}
+
+function getSexLabel(value) {
+  if (value === "female") {
+    return "Female";
+  }
+  if (value === "male") {
+    return "Male";
+  }
+  return "—";
+}
+
+function setSexValue(value) {
+  bodyData.sex = value === "female" || value === "male" ? value : "";
+  sexButtons.forEach((button) => {
+    const isActive = button.dataset.sexValue === bodyData.sex;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function renderBodyHero() {
+  const latestEntry = getLatestBodyEntry();
+  const currentWeight = latestEntry?.weightKg ? `${latestEntry.weightKg} kg` : "—";
+  const heightValue = bodyData.heightCm ? `${bodyData.heightCm} cm` : "—";
+  const goalValue = bodyData.targetWeightKg ? `${bodyData.targetWeightKg} kg` : "—";
+  const changeValue = getBodyChange() || "—";
+  const bmiValue = getBodyBmi() || "—";
+
+  bodyHero.innerHTML = `
+    <div class="body-card-head">
+      <p class="section-kicker">
+        <ion-icon name="barbell-outline" aria-hidden="true"></ion-icon>
+        <span>Body Progress</span>
+      </p>
+      <h2>Weight journal</h2>
+    </div>
+    <p class="body-hero-note">키는 프로필 값으로 두고, 몸무게는 날짜별 로그로 쌓아두는 방식이에요.</p>
+    <div class="body-hero-grid">
+      <div class="body-hero-stat is-primary">
+        <span class="summary-stat-label">Current</span>
+        <strong>${currentWeight}</strong>
+      </div>
+      <div class="body-hero-stat">
+        <span class="summary-stat-label">Height</span>
+        <strong>${heightValue}</strong>
+      </div>
+      <div class="body-hero-stat">
+        <span class="summary-stat-label">Goal</span>
+        <strong>${goalValue}</strong>
+      </div>
+      <div class="body-hero-stat">
+        <span class="summary-stat-label">BMI</span>
+        <strong>${bmiValue}</strong>
+      </div>
+      <div class="body-hero-stat">
+        <span class="summary-stat-label">Change</span>
+        <strong>${changeValue}</strong>
+      </div>
+    </div>
+  `;
+}
+
+function renderBodyChart() {
+  if (!bodyData.entries.length) {
+    bodyChart.innerHTML = '<p class="body-chart-empty">아직 몸무게 기록이 없어요. 오늘 체크인부터 하나 추가해보세요.</p>';
+    return;
+  }
+
+  const entries = [...bodyData.entries]
+    .slice(0, 8)
+    .reverse()
+    .map((entry) => ({ ...entry, numericWeight: Number(entry.weightKg) }))
+    .filter((entry) => !Number.isNaN(entry.numericWeight));
+
+  if (!entries.length) {
+    bodyChart.innerHTML = '<p class="body-chart-empty">숫자형 기록이 있어야 차트를 그릴 수 있어요.</p>';
+    return;
+  }
+
+  const values = entries.map((entry) => entry.numericWeight);
+  const targetWeight = Number(bodyData.targetWeightKg);
+  const hasTargetWeight = !Number.isNaN(targetWeight);
+  const min = Math.min(...values, hasTargetWeight ? targetWeight : Infinity) - 0.5;
+  const max = Math.max(...values, hasTargetWeight ? targetWeight : -Infinity) + 0.5;
+  const width = 620;
+  const height = 220;
+  const paddingX = 24;
+  const paddingY = 24;
+
+  const points = entries.map((entry, index) => {
+    const x = paddingX + (index * (width - paddingX * 2)) / Math.max(entries.length - 1, 1);
+    const y =
+      height -
+      paddingY -
+      ((entry.numericWeight - min) / Math.max(max - min, 0.1)) * (height - paddingY * 2);
+    return { ...entry, x, y };
+  });
+
+  const targetLineY = hasTargetWeight
+    ? height -
+      paddingY -
+      ((targetWeight - min) / Math.max(max - min, 0.1)) * (height - paddingY * 2)
+    : null;
+
+  bodyChart.innerHTML = `
+    <svg class="body-chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Weight trend chart">
+      ${
+        hasTargetWeight
+          ? `
+            <line
+              class="body-chart-target-line"
+              x1="${paddingX}"
+              y1="${targetLineY}"
+              x2="${width - paddingX}"
+              y2="${targetLineY}"
+            ></line>
+            <text
+              class="body-chart-target-label"
+              x="${width - paddingX}"
+              y="${targetLineY - 8}"
+              text-anchor="end"
+            >Goal ${targetWeight.toFixed(1)} kg</text>
+          `
+          : ""
+      }
+      <polyline class="body-chart-line" points="${points.map((point) => `${point.x},${point.y}`).join(" ")}"></polyline>
+      ${points
+        .map(
+          (point) => `
+            <circle class="body-chart-point" cx="${point.x}" cy="${point.y}" r="4"></circle>
+            <text class="body-chart-value" x="${point.x}" y="${point.y - 10}" text-anchor="middle">${point.numericWeight.toFixed(1)}</text>
+            <text class="body-chart-label" x="${point.x}" y="${height - 4}" text-anchor="middle">${formatDateLabel(point.date)}</text>
+          `
+        )
+        .join("")}
+    </svg>
+  `;
+}
+
+function renderBodyHistory() {
+  if (!bodyData.entries.length) {
+    bodyHistory.innerHTML = '<p class="body-history-empty">아직 체크인 로그가 없어요.</p>';
+    return;
+  }
+
+  bodyHistory.innerHTML = bodyData.entries
+    .map(
+      (entry, index) => `
+        <article class="body-history-item">
+          <div>
+            <div class="body-history-date">${entry.date}</div>
+            <div class="body-history-weight">${entry.weightKg} kg</div>
+            ${entry.note ? `<p class="body-history-note">${entry.note}</p>` : ""}
+          </div>
+          <span class="summary-stat-label">${getWeekdayLabel(entry.date)}요일</span>
+          <button class="body-history-delete" type="button" data-entry-index="${index}">Delete</button>
+        </article>
+      `
+    )
+    .join("");
+
+  bodyHistory.querySelectorAll("[data-entry-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      bodyData.entries.splice(Number(button.dataset.entryIndex), 1);
+      saveBodyProgress("체크인 기록을 삭제했어요.");
+      renderBodyProgress();
+    });
+  });
+}
+
+function renderBodyProgress() {
+  heightInput.value = bodyData.heightCm;
+  ageInput.value = bodyData.age;
+  setSexValue(bodyData.sex);
+  targetWeightInput.value = bodyData.targetWeightKg;
+  renderBodyHero();
+  renderBodyChart();
+  renderBodyHistory();
+}
+
+function handleBodyProfileInput() {
+  bodyData.heightCm = normalizeDecimalInput(heightInput.value);
+  bodyData.age = String(ageInput.value || "")
+    .trim()
+    .replace(/\D/g, "");
+  setSexValue(bodyData.sex);
+  bodyData.targetWeightKg = normalizeDecimalInput(targetWeightInput.value);
+  heightInput.value = bodyData.heightCm;
+  ageInput.value = bodyData.age;
+  targetWeightInput.value = bodyData.targetWeightKg;
+  saveBodyProgress("바디 프로필을 저장했어요.");
+  renderBodyHero();
+}
+
+function handleBodyEntrySubmit(event) {
+  event.preventDefault();
+
+  const weightKg = normalizeDecimalInput(bodyWeightInput.value);
+  const date = bodyDateInput.dataset.value || getTodayDateKey();
+  const note = bodyNoteInput.value.trim();
+
+  if (!weightKg) {
+    return;
+  }
+
+  const existingIndex = bodyData.entries.findIndex((entry) => entry.date === date);
+  const nextEntry = { date, weightKg, note };
+
+  if (existingIndex >= 0) {
+    bodyData.entries[existingIndex] = nextEntry;
+  } else {
+    bodyData.entries.unshift(nextEntry);
+  }
+
+  bodyData.entries.sort((a, b) => b.date.localeCompare(a.date));
+  saveBodyProgress("오늘 체크인을 저장했어요.");
+  bodyEntryForm.reset();
+  setBodyCalendarDate(getTodayDateKey());
+  renderBodyProgress();
+}
+
+document.addEventListener("click", (event) => {
+  if (isSettingsOpen && !event.target.closest(".settings-menu")) {
     setSettingsOpen(false);
+  }
+
+  if (!event.target.closest(".cell-context-menu")) {
+    closeCellContextMenu();
+  }
+
+  if (isBodyCalendarOpen && !event.target.closest(".body-date-picker")) {
+    setBodyCalendarOpen(false);
+  }
+});
+
+document.addEventListener("scroll", closeCellContextMenu, true);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeCellContextMenu();
   }
 });
 
 themeToggle.addEventListener("click", toggleTheme);
 settingsButton.addEventListener("click", toggleSettingsMenu);
+skinViewTab.addEventListener("click", () => setActiveView("skin"));
+bodyViewTab.addEventListener("click", () => setActiveView("body"));
+skinRoutineTab.addEventListener("click", () => setActiveSkinSection("routine"));
+skinProductsTab.addEventListener("click", () => setActiveSkinSection("products"));
 signInTab.addEventListener("click", () => setAuthMode("sign-in"));
 signUpTab.addEventListener("click", () => setAuthMode("sign-up"));
 authForm.addEventListener("submit", handleAuthSubmit);
 logoutButton.addEventListener("click", handleLogout);
+duplicateWeekButton.addEventListener("click", duplicateCurrentWeekToNextWeek);
 exportButton.addEventListener("click", exportRoutineJson);
 importButton.addEventListener("click", () => {
   setSettingsOpen(false);
@@ -1218,6 +2698,47 @@ importButton.addEventListener("click", () => {
 prevWeekButton.addEventListener("click", showPreviousWeek);
 nextWeekButton.addEventListener("click", showNextWeek);
 importFileInput.addEventListener("change", importRoutineJson);
+heightInput.addEventListener("change", handleBodyProfileInput);
+ageInput.addEventListener("change", handleBodyProfileInput);
+targetWeightInput.addEventListener("change", handleBodyProfileInput);
+sexButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setSexValue(button.dataset.sexValue);
+    saveBodyProgress("바디 프로필을 저장했어요.");
+    renderBodyHero();
+  });
+});
+bodyEntryForm.addEventListener("submit", handleBodyEntrySubmit);
+skinProductForm.addEventListener("submit", handleSkinProductSubmit);
+skinVideoForm.addEventListener("submit", handleSkinVideoSubmit);
+skinVideoUrlInput.addEventListener("input", queueSkinVideoPreviewSync);
+skinVideoUrlInput.addEventListener("change", queueSkinVideoPreviewSync);
+skinVideoTitleInput.addEventListener("input", renderSkinVideoPreview);
+skinVideoNoteInput.addEventListener("input", renderSkinVideoPreview);
+bodyDateToggle.addEventListener("click", () => {
+  bodyCalendarMonth = (bodyDateInput.dataset.value || getTodayDateKey()).slice(0, 7);
+  setBodyCalendarOpen(!isBodyCalendarOpen);
+});
+skinProductImageZone.addEventListener("click", () => {
+  skinProductImageInput.click();
+});
+skinProductImageZone.addEventListener("paste", handleSkinProductImagePaste);
+skinProductImageZone.addEventListener("dragover", (event) => {
+  event.preventDefault();
+});
+skinProductImageZone.addEventListener("drop", (event) => {
+  event.preventDefault();
+  loadSkinProductImageFromFile(event.dataTransfer?.files?.[0]);
+});
+skinProductImageInput.addEventListener("change", (event) => {
+  loadSkinProductImageFromFile(event.target.files?.[0]);
+  skinProductImageInput.value = "";
+});
+skinProductStatusInput.querySelectorAll("[data-product-status]").forEach((button) => {
+  button.addEventListener("click", () => {
+    setSkinProductStatus(button.dataset.productStatus);
+  });
+});
 
 applyTheme(currentTheme);
 setAuthMode("sign-in");
@@ -1225,6 +2746,9 @@ supabaseClient = initSupabase();
 routineData = ensureTimelineWindow(routineData);
 visibleWeekStart = getWeekStartIndex();
 mobileOpenDay = getTodayIndex();
+setBodyCalendarDate(getTodayDateKey());
+setSkinProductStatus(skinProductStatus);
+setSkinProductTargetCell(skinProductTargetCell.season, skinProductTargetCell.skinType);
 
 if (supabaseClient) {
   syncSession();

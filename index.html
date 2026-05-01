@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Skin Journal</title>
+    <title>My Self Care</title>
     <link
       rel="icon"
       type="image/svg+xml"
@@ -23,14 +23,14 @@
         <div class="hero-main">
           <div class="hero-topline">
             <span class="app-mark" aria-hidden="true">
-              <ion-icon name="water-outline"></ion-icon>
+              <ion-icon name="sparkles-outline"></ion-icon>
             </span>
-            <p class="eyebrow">Personal Skin Routine</p>
+            <p class="eyebrow">Beauty, Body & Style</p>
           </div>
-          <h1>My Skin Journal</h1>
+          <h1>My Self Care</h1>
           <p class="hero-copy">
-            매일의 루틴을 가볍게 정리하고, 어디서든 같은 계정으로 이어서 보는
-            개인 스킨케어 저널.
+            스킨, 바디, 스타일 기록을 한곳에 정리하고 내 자기관리 흐름을
+            가볍게 이어가는 퍼스널 셀프케어 저널.
           </p>
         </div>
         <div class="hero-actions">
@@ -66,6 +66,10 @@
                 <span>Settings</span>
               </button>
               <div id="settingsPanel" class="settings-panel" hidden>
+                <button id="duplicateWeekButton" class="settings-item" type="button">
+                  <ion-icon name="copy-outline" aria-hidden="true"></ion-icon>
+                  <span>Copy Week To Next</span>
+                </button>
                 <button id="exportButton" class="settings-item" type="button">
                   <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
                   <span>Export JSON</span>
@@ -90,7 +94,7 @@
           <h2>간단하게 시작하기</h2>
           <p class="section-note">
             이름과 비밀번호만 만들면 됩니다. 이메일 인증 없이 바로 들어가고,
-            같은 이름으로 다른 기기에서도 이어서 사용할 수 있어요.
+            같은 이름으로 다른 기기에서도 내 셀프케어 기록을 이어서 사용할 수 있어요.
           </p>
         </div>
 
@@ -123,7 +127,30 @@
         </p>
       </section>
 
-      <main id="appContent" class="layout" hidden>
+      <main id="appContent" class="app-content" hidden>
+        <section class="view-tabs" aria-label="App sections">
+          <button id="skinViewTab" class="view-tab is-active" type="button" aria-pressed="true">
+            <ion-icon name="water-outline" aria-hidden="true"></ion-icon>
+            <span>Skin Care</span>
+          </button>
+          <div class="skin-subtabs" aria-label="Skin sections">
+            <button id="skinRoutineTab" class="skin-subtab is-active" type="button" aria-pressed="true">
+              <span class="skin-subtab-dot" aria-hidden="true"></span>
+              <span>Routine</span>
+            </button>
+            <button id="skinProductsTab" class="skin-subtab" type="button" aria-pressed="false">
+              <span class="skin-subtab-dot" aria-hidden="true"></span>
+              <span>Products</span>
+            </button>
+          </div>
+          <button id="bodyViewTab" class="view-tab" type="button" aria-pressed="false">
+            <ion-icon name="barbell-outline" aria-hidden="true"></ion-icon>
+            <span>Body Care</span>
+          </button>
+        </section>
+
+        <section id="skinView" class="content-view layout-section">
+          <div id="skinRoutineSection" class="layout">
         <section class="journal-area">
           <div class="section-header">
             <div>
@@ -176,6 +203,60 @@
           </div>
 
           <div id="mobileCards" class="mobile-cards"></div>
+
+          <section class="skin-videos card">
+            <div class="skin-videos-head">
+              <div>
+                <p class="section-kicker">
+                  <ion-icon name="logo-youtube" aria-hidden="true"></ion-icon>
+                  <span>Video Shelf</span>
+                </p>
+                <h2>Skincare video references</h2>
+                <p class="section-note">링크를 넣어두면 나중에 다시 보고 싶은 영상들을 스킨 저널 안에서 같이 정리할 수 있어요.</p>
+              </div>
+            </div>
+
+            <form id="skinVideoForm" class="skin-video-form">
+              <div class="skin-video-form-grid">
+                <label class="skin-video-field skin-video-field-link">
+                  <span>YouTube link</span>
+                  <input
+                    id="skinVideoUrlInput"
+                    type="url"
+                    inputmode="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    required
+                  />
+                </label>
+                <label class="skin-video-field">
+                  <span>Personal title</span>
+                  <input
+                    id="skinVideoTitleInput"
+                    type="text"
+                    placeholder="예: 모공 케어 참고 영상"
+                  />
+                </label>
+              </div>
+              <label class="skin-video-field">
+                <span>Notes</span>
+                <textarea
+                  id="skinVideoNoteInput"
+                  rows="3"
+                  placeholder="어떤 내용인지, 나중에 뭘 다시 보고 싶은지 적어두세요."
+                ></textarea>
+              </label>
+              <div class="skin-video-form-actions">
+                <button id="skinVideoSubmitButton" class="button button-secondary" type="submit">
+                  <ion-icon name="add-outline" aria-hidden="true"></ion-icon>
+                  <span>Add video</span>
+                </button>
+              </div>
+            </form>
+
+            <div id="skinVideoPreview" class="skin-video-preview" hidden></div>
+            <div id="skinVideoList" class="skin-video-list"></div>
+          </section>
+
           <input id="importFileInput" type="file" accept="application/json,.json" hidden />
         </section>
 
@@ -229,6 +310,208 @@
             </p>
           </section>
         </aside>
+          </div>
+
+          <section id="skinProductsSection" class="skin-products-shell" hidden>
+            <section class="card skin-products-hero">
+              <div class="skin-products-hero-copy">
+                <p class="section-kicker">
+                  <ion-icon name="bag-handle-outline" aria-hidden="true"></ion-icon>
+                  <span>Product Shelf</span>
+                </p>
+                <h2>Seasonal skincare shelf</h2>
+                <p class="section-note">피부 타입과 계절별로 제품을 나눠서 모아두고, 각 칸에 관심 제품이나 구매 후보를 이미지와 함께 정리할 수 있어요.</p>
+              </div>
+            </section>
+
+            <section class="card skin-season-board-card">
+              <div class="body-card-head">
+                <p class="section-kicker">
+                  <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
+                  <span>Season Board</span>
+                </p>
+                <h2>Skin type × season table</h2>
+              </div>
+              <div class="skin-season-board-wrap">
+                <div id="skinProductMatrix" class="skin-season-board"></div>
+              </div>
+            </section>
+
+            <section class="card skin-product-form-card">
+              <div class="body-card-head">
+                <div>
+                  <p class="section-kicker">
+                    <ion-icon name="add-circle-outline" aria-hidden="true"></ion-icon>
+                    <span>Add Product</span>
+                  </p>
+                  <h2>Product entry</h2>
+                </div>
+                <p id="skinProductTarget" class="skin-product-target"></p>
+              </div>
+              <form id="skinProductForm" class="skin-product-form">
+                <div class="skin-product-form-grid">
+                  <label class="skin-product-field">
+                    <span>Product name</span>
+                    <input id="skinProductNameInput" type="text" placeholder="예: Aestura 365 Cream" required />
+                  </label>
+                  <label class="skin-product-field">
+                    <span>Brand</span>
+                    <input id="skinProductBrandInput" type="text" placeholder="예: Aestura" />
+                  </label>
+                  <label class="skin-product-field">
+                    <span>Category</span>
+                    <input id="skinProductCategoryInput" type="text" placeholder="예: Moisturizer" />
+                  </label>
+                  <label class="skin-product-field">
+                    <span>Price</span>
+                    <input id="skinProductPriceInput" type="text" inputmode="decimal" placeholder="예: 28.00" />
+                  </label>
+                  <label class="skin-product-field skin-product-field-wide">
+                    <span>Product link</span>
+                    <input id="skinProductLinkInput" type="url" inputmode="url" placeholder="https://..." />
+                  </label>
+                  <label class="skin-product-field skin-product-field-wide">
+                    <span>Status</span>
+                    <div id="skinProductStatusInput" class="product-status-control" role="group" aria-label="Product status">
+                      <button class="product-status-button is-active" type="button" data-product-status="interested">Interested</button>
+                      <button class="product-status-button" type="button" data-product-status="buy-next">Buy next</button>
+                      <button class="product-status-button" type="button" data-product-status="bought">Bought</button>
+                      <button class="product-status-button" type="button" data-product-status="testing">Testing</button>
+                    </div>
+                  </label>
+                </div>
+                <label class="skin-product-field">
+                  <span>Notes</span>
+                  <textarea id="skinProductNoteInput" rows="4" placeholder="왜 관심 있는지, 성분이나 후기 메모 등을 적어두세요."></textarea>
+                </label>
+                <div class="skin-product-media-row">
+                  <div
+                    id="skinProductImageZone"
+                    class="skin-product-image-zone"
+                    tabindex="0"
+                    role="button"
+                    aria-label="Paste or upload product image"
+                  >
+                    <div class="skin-product-image-zone-copy">
+                      <ion-icon name="image-outline" aria-hidden="true"></ion-icon>
+                      <strong>Paste product image here</strong>
+                      <p>이미지를 복사한 다음 여기에 붙여넣거나 클릭해서 업로드할 수 있어요.</p>
+                    </div>
+                    <div id="skinProductImagePreview" class="skin-product-image-preview" hidden></div>
+                  </div>
+                  <input id="skinProductImageInput" type="file" accept="image/*" hidden />
+                </div>
+                <div class="skin-product-form-actions">
+                  <button class="button button-secondary" type="submit">
+                    <ion-icon name="save-outline" aria-hidden="true"></ion-icon>
+                    <span>Save product</span>
+                  </button>
+                </div>
+              </form>
+            </section>
+          </section>
+        </section>
+
+        <section id="bodyView" class="content-view layout-section body-view" hidden>
+          <div class="body-shell">
+            <section id="bodyHero" class="card body-hero"></section>
+
+            <div class="body-grid">
+              <section class="card body-card">
+                <div class="body-card-head">
+                  <p class="section-kicker">
+                    <ion-icon name="person-outline" aria-hidden="true"></ion-icon>
+                    <span>Profile</span>
+                  </p>
+                  <h2>Body profile</h2>
+                </div>
+                <div class="body-fields">
+                  <label class="body-field">
+                    <span>Height (cm)</span>
+                    <input id="heightInput" type="text" inputmode="decimal" placeholder="170.0" />
+                  </label>
+                  <label class="body-field">
+                    <span>Age</span>
+                    <input id="ageInput" type="text" inputmode="numeric" placeholder="25" />
+                  </label>
+                  <label class="body-field">
+                    <span>Sex</span>
+                    <div id="sexInput" class="body-segmented-control" role="group" aria-label="Sex">
+                      <button class="body-segment-button" type="button" data-sex-value="female">
+                        Female
+                      </button>
+                      <button class="body-segment-button" type="button" data-sex-value="male">
+                        Male
+                      </button>
+                    </div>
+                  </label>
+                  <label class="body-field">
+                    <span>Goal weight (kg)</span>
+                    <input id="targetWeightInput" type="text" inputmode="decimal" placeholder="60.0" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="card body-card">
+                <div class="body-card-head">
+                  <p class="section-kicker">
+                    <ion-icon name="add-circle-outline" aria-hidden="true"></ion-icon>
+                    <span>Quick Add</span>
+                  </p>
+                  <h2>Today's check-in</h2>
+                </div>
+                <form id="bodyEntryForm" class="body-entry-form">
+                  <div class="body-fields">
+                    <label class="body-field">
+                      <span>Weight (kg)</span>
+                      <input id="bodyWeightInput" type="text" inputmode="decimal" placeholder="65.4" required />
+                    </label>
+                    <label class="body-field">
+                      <span>Date</span>
+                      <div class="body-date-picker">
+                        <input id="bodyDateInput" type="text" readonly />
+                        <button id="bodyDateToggle" class="body-date-toggle" type="button" aria-expanded="false" aria-controls="bodyCalendarPanel">
+                          <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+                        </button>
+                        <div id="bodyCalendarPanel" class="body-calendar-panel" hidden></div>
+                      </div>
+                    </label>
+                  </div>
+                  <label class="body-field body-field-note">
+                    <span>Memo</span>
+                    <textarea id="bodyNoteInput" rows="3" placeholder="수면, 식단, 컨디션 같은 메모"></textarea>
+                  </label>
+                  <button id="bodyEntrySubmit" class="button" type="submit">
+                    <ion-icon name="save-outline" aria-hidden="true"></ion-icon>
+                    <span>Save check-in</span>
+                  </button>
+                </form>
+              </section>
+            </div>
+
+            <section class="card body-card">
+              <div class="body-card-head">
+                <p class="section-kicker">
+                  <ion-icon name="analytics-outline" aria-hidden="true"></ion-icon>
+                  <span>Trend</span>
+                </p>
+                <h2>Weight trend</h2>
+              </div>
+              <div id="bodyChart" class="body-chart"></div>
+            </section>
+
+            <section class="card body-card">
+              <div class="body-card-head">
+                <p class="section-kicker">
+                  <ion-icon name="receipt-outline" aria-hidden="true"></ion-icon>
+                  <span>History</span>
+                </p>
+                <h2>Check-in log</h2>
+              </div>
+              <div id="bodyHistory" class="body-history"></div>
+            </section>
+          </div>
+        </section>
       </main>
     </div>
 
