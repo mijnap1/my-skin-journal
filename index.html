@@ -15,7 +15,9 @@
       href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Red+Hat+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/responsive.css" />
   </head>
   <body>
     <div class="page-shell">
@@ -147,6 +149,16 @@
             <ion-icon name="barbell-outline" aria-hidden="true"></ion-icon>
             <span>Body Care</span>
           </button>
+          <div class="body-subtabs" aria-label="Body sections" hidden>
+            <button id="bodyProgressTab" class="body-subtab is-active" type="button" aria-pressed="true">
+              <span class="body-subtab-dot" aria-hidden="true"></span>
+              <span>Progress</span>
+            </button>
+            <button id="bodyWorkoutTab" class="body-subtab" type="button" aria-pressed="false">
+              <span class="body-subtab-dot" aria-hidden="true"></span>
+              <span>운동 메모</span>
+            </button>
+          </div>
         </section>
 
         <section id="skinView" class="content-view layout-section">
@@ -335,6 +347,7 @@
               <div class="skin-season-board-wrap">
                 <div id="skinProductMatrix" class="skin-season-board"></div>
               </div>
+              <div id="skinProductMobileList" class="skin-season-mobile-list"></div>
             </section>
 
             <section class="card skin-product-form-card">
@@ -413,7 +426,7 @@
         </section>
 
         <section id="bodyView" class="content-view layout-section body-view" hidden>
-          <div class="body-shell">
+          <div id="bodyProgressSection" class="body-shell">
             <section id="bodyHero" class="card body-hero"></section>
 
             <div class="body-grid">
@@ -511,12 +524,96 @@
               <div id="bodyHistory" class="body-history"></div>
             </section>
           </div>
+
+          <section id="bodyWorkoutSection" class="body-workout-shell" hidden>
+            <section class="card body-workout-hero">
+              <div>
+                <p class="section-kicker">
+                  <ion-icon name="fitness-outline" aria-hidden="true"></ion-icon>
+                  <span>운동 메모</span>
+                </p>
+                <h2>부위별 운동 리스트</h2>
+                <p class="section-note">
+                  몸 부위별로 하는 운동, 자세 메모, 참고 이미지를 가볍게 모아두는 공간이에요.
+                </p>
+              </div>
+            </section>
+
+            <div class="body-workout-grid">
+              <section class="card body-card body-workout-form-card">
+                <div class="body-card-head">
+                  <p class="section-kicker">
+                    <ion-icon name="add-circle-outline" aria-hidden="true"></ion-icon>
+                    <span>운동 추가</span>
+                  </p>
+                  <h2>운동 메모</h2>
+                </div>
+                <form id="bodyWorkoutForm" class="body-workout-form">
+                  <div class="body-workout-parts" id="bodyWorkoutPartInput" role="group" aria-label="Workout body part">
+                    <button class="body-part-button is-active" type="button" data-body-part="chest">가슴</button>
+                    <button class="body-part-button" type="button" data-body-part="back">등</button>
+                    <button class="body-part-button" type="button" data-body-part="shoulders">어깨</button>
+                    <button class="body-part-button" type="button" data-body-part="biceps">이두</button>
+                    <button class="body-part-button" type="button" data-body-part="triceps">삼두</button>
+                    <button class="body-part-button" type="button" data-body-part="forearms">전완</button>
+                    <button class="body-part-button" type="button" data-body-part="core">복근</button>
+                    <button class="body-part-button" type="button" data-body-part="legs">하체</button>
+                    <button class="body-part-button" type="button" data-body-part="cardio">유산소</button>
+                  </div>
+
+                  <label class="body-field">
+                    <span>운동 이름</span>
+                    <input id="bodyWorkoutTitleInput" type="text" placeholder="예: 인클라인 덤벨 프레스" required />
+                  </label>
+                  <label class="body-field body-field-note">
+                    <span>메모</span>
+                    <textarea id="bodyWorkoutNoteInput" rows="4" placeholder="세트, 반복 수, 자세 포인트, 느낌 등을 적어두세요."></textarea>
+                  </label>
+
+                  <div
+                    id="bodyWorkoutImageZone"
+                    class="body-workout-image-zone"
+                    tabindex="0"
+                    role="button"
+                    aria-label="Paste or upload workout image"
+                  >
+                    <div class="body-workout-image-zone-copy">
+                      <ion-icon name="image-outline" aria-hidden="true"></ion-icon>
+                      <strong>운동 이미지 붙여넣기</strong>
+                      <p>운동 자세 이미지나 참고 사진을 복사해서 붙여넣거나 클릭해서 업로드할 수 있어요.</p>
+                    </div>
+                    <div id="bodyWorkoutImagePreview" class="body-workout-image-preview" hidden></div>
+                  </div>
+                  <input id="bodyWorkoutImageInput" type="file" accept="image/*" hidden />
+
+                  <button class="button" type="submit">
+                    <ion-icon name="save-outline" aria-hidden="true"></ion-icon>
+                    <span>운동 저장</span>
+                  </button>
+                </form>
+              </section>
+
+              <section class="card body-card body-workout-list-card">
+                <div class="body-card-head">
+                  <p class="section-kicker">
+                    <ion-icon name="list-outline" aria-hidden="true"></ion-icon>
+                    <span>Library</span>
+                  </p>
+                  <h2>운동 라이브러리</h2>
+                </div>
+                <div id="bodyWorkoutList" class="body-workout-list"></div>
+              </section>
+            </div>
+          </section>
         </section>
       </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
+    <script src="assets/js/core.js"></script>
+    <script src="assets/js/skin.js"></script>
+    <script src="assets/js/body.js"></script>
+    <script src="assets/js/init.js"></script>
     <script
       type="module"
       src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
