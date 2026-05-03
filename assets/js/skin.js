@@ -332,6 +332,16 @@ function renderSkinProductCard(product) {
 }
 
 function renderSkinProductList() {
+  const selectedSkinType = SKIN_TYPES.find(
+    (skinType) => skinType.value === skinProductTargetCell.skinType
+  ) || SKIN_TYPES[2];
+
+  skinTypeSelector.querySelectorAll("[data-skin-type-option]").forEach((button) => {
+    const isActive = button.dataset.skinTypeOption === selectedSkinType.value;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
   const seasonHeaders = SKIN_SEASONS.map(
     (season) => `
       <div class="skin-season-header">
@@ -341,7 +351,7 @@ function renderSkinProductList() {
     `
   ).join("");
 
-  const rows = SKIN_TYPES.map((skinType) => {
+  const rows = [selectedSkinType].map((skinType) => {
     const cells = SKIN_SEASONS.map((season) => {
       const products = skinLibraryData.products.filter(
         (product) => product.season === season.value && product.skinType === skinType.value
@@ -376,7 +386,7 @@ function renderSkinProductList() {
   }).join("");
 
   skinProductMatrix.innerHTML = `
-    <div class="skin-season-corner">피부타입 / 계절</div>
+    <div class="skin-season-corner">선택한 피부타입</div>
     ${seasonHeaders}
     ${rows}
   `;
@@ -922,12 +932,15 @@ function render() {
   if (activeView === "body" && activeBodySection === "workouts") {
     renderBodyWorkoutList();
   }
+  if (activeView === "style") {
+    renderStyleBoard();
+  }
 }
 
 function exportRoutineJson() {
   setSettingsOpen(false);
   const payload = {
-    version: 5,
+    version: 6,
     exportedAt: new Date().toISOString(),
     ...buildAppPayload(),
   };
@@ -959,6 +972,7 @@ function importRoutineJson(event) {
       routineData = imported.skinTimeline;
       bodyData = imported.bodyProgress;
       skinLibraryData = imported.skinLibrary;
+      styleData = imported.styleBoard;
       visibleWeekStart = getWeekStartIndex();
       mobileOpenDay = getTodayIndex();
       mobileEditDay = null;

@@ -23,6 +23,7 @@ themeToggle.addEventListener("click", toggleTheme);
 settingsButton.addEventListener("click", toggleSettingsMenu);
 skinViewTab.addEventListener("click", () => setActiveView("skin"));
 bodyViewTab.addEventListener("click", () => setActiveView("body"));
+styleViewTab.addEventListener("click", () => setActiveView("style"));
 skinRoutineTab.addEventListener("click", () => setActiveSkinSection("routine"));
 skinProductsTab.addEventListener("click", () => setActiveSkinSection("products"));
 bodyProgressTab.addEventListener("click", () => setActiveBodySection("progress"));
@@ -52,6 +53,7 @@ sexButtons.forEach((button) => {
 });
 bodyEntryForm.addEventListener("submit", handleBodyEntrySubmit);
 bodyWorkoutForm.addEventListener("submit", handleBodyWorkoutSubmit);
+styleItemForm.addEventListener("submit", handleStyleItemSubmit);
 skinProductForm.addEventListener("submit", handleSkinProductSubmit);
 skinVideoForm.addEventListener("submit", handleSkinVideoSubmit);
 skinVideoUrlInput.addEventListener("input", queueSkinVideoPreviewSync);
@@ -97,9 +99,35 @@ bodyWorkoutImageInput.addEventListener("change", (event) => {
   loadBodyWorkoutImageFromFile(event.target.files?.[0]);
   bodyWorkoutImageInput.value = "";
 });
+styleCategoryButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setStyleCategory(button.dataset.styleCategory);
+  });
+});
+styleItemImageZone.addEventListener("click", () => {
+  styleItemImageInput.click();
+});
+styleItemImageZone.addEventListener("paste", handleStyleImagePaste);
+styleItemImageZone.addEventListener("dragover", (event) => {
+  event.preventDefault();
+});
+styleItemImageZone.addEventListener("drop", (event) => {
+  event.preventDefault();
+  loadStyleImageFromFile(event.dataTransfer?.files?.[0]);
+});
+styleItemImageInput.addEventListener("change", (event) => {
+  loadStyleImageFromFile(event.target.files?.[0]);
+  styleItemImageInput.value = "";
+});
 skinProductStatusInput.querySelectorAll("[data-product-status]").forEach((button) => {
   button.addEventListener("click", () => {
     setSkinProductStatus(button.dataset.productStatus);
+  });
+});
+skinTypeSelector.querySelectorAll("[data-skin-type-option]").forEach((button) => {
+  button.addEventListener("click", () => {
+    setSkinProductTargetCell(skinProductTargetCell.season, button.dataset.skinTypeOption);
+    renderSkinProductList();
   });
 });
 
@@ -111,6 +139,7 @@ visibleWeekStart = getWeekStartIndex();
 mobileOpenDay = getTodayIndex();
 setBodyCalendarDate(getTodayDateKey());
 setBodyWorkoutPart(bodyWorkoutPart);
+setStyleCategory(styleCategory);
 setSkinProductStatus(skinProductStatus);
 setSkinProductTargetCell(skinProductTargetCell.season, skinProductTargetCell.skinType);
 

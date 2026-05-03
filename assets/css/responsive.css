@@ -24,12 +24,9 @@
   .skin-video-form-grid,
   .skin-video-preview,
   .skin-video-card,
-  .skin-product-form-grid {
+  .skin-product-form-grid,
+  .style-form-grid {
     grid-template-columns: 1fr;
-  }
-
-  .view-tabs {
-    align-items: flex-start;
   }
 
   .skin-subtabs,
@@ -37,22 +34,6 @@
     width: min(100%, 420px);
     justify-content: center;
     margin-inline: auto;
-  }
-
-  .skin-subtabs {
-    order: 2;
-  }
-
-  #skinViewTab {
-    order: 1;
-  }
-
-  #bodyViewTab {
-    order: 3;
-  }
-
-  .body-subtabs {
-    order: 4;
   }
 
   .skin-video-card-actions {
@@ -152,7 +133,9 @@
 
   .skin-products-hero,
   .skin-product-form-card,
-  .skin-season-board-card {
+  .skin-season-board-card,
+  .style-hero,
+  .style-card {
     padding: 18px;
   }
 
@@ -163,6 +146,15 @@
   .skin-season-mobile-list {
     display: block;
     margin-top: 18px;
+  }
+
+  .skin-type-selector {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .skin-type-button {
+    padding-inline: 8px;
   }
 
   .summary-overview {
@@ -185,6 +177,7 @@
 
   .body-grid,
   .body-workout-grid,
+  .style-grid,
   .body-fields,
   .body-hero-grid {
     grid-template-columns: 1fr;
@@ -218,8 +211,15 @@
     justify-items: center;
   }
 
+  #skinViewTab,
+  #bodyViewTab,
+  #styleViewTab {
+    order: initial;
+  }
+
   .skin-subtabs,
   .body-subtabs {
+    order: initial;
     width: min(100%, 420px);
     justify-content: center;
     margin-inline: auto;
@@ -358,7 +358,9 @@
 
   .body-hero,
   .body-card,
-  .body-workout-hero {
+  .body-workout-hero,
+  .style-hero,
+  .style-card {
     padding: 18px;
   }
 
@@ -367,21 +369,40 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .body-part-button {
+  .style-category-control {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .body-part-button,
+  .style-category-button {
     justify-content: center;
   }
 
-  .body-workout-item {
+  .body-workout-item,
+  .style-item-card {
     grid-template-columns: 74px minmax(0, 1fr);
   }
 
-  .body-workout-delete {
+  .body-workout-actions,
+  .style-item-actions {
     grid-column: 1 / -1;
+    width: 100%;
+    justify-self: stretch;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .body-workout-link,
+  .body-workout-delete,
+  .style-item-link,
+  .style-item-delete {
     width: 100%;
     justify-content: center;
   }
 
-  .body-workout-item-image {
+  .body-workout-item-image,
+  .style-item-image {
     width: 74px;
   }
 
@@ -424,6 +445,10 @@
   }
 
   .mood-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .skin-type-selector {
     grid-template-columns: 1fr;
   }
 

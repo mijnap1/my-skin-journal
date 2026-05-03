@@ -11,31 +11,36 @@ function setActiveBodySection(section) {
 }
 
 function setActiveView(view) {
-  activeView = view === "body" ? "body" : "skin";
+  activeView = view === "body" || view === "style" ? view : "skin";
   localStorage.setItem(ACTIVE_VIEW_KEY, activeView);
   render();
 }
 
 function renderActiveView() {
   const isSkin = activeView === "skin";
+  const isBody = activeView === "body";
+  const isStyle = activeView === "style";
   const isRoutine = activeSkinSection === "routine";
   const isBodyProgress = activeBodySection === "progress";
   skinView.hidden = !isSkin;
-  bodyView.hidden = isSkin;
+  bodyView.hidden = !isBody;
+  styleView.hidden = !isStyle;
   skinViewTab.classList.toggle("is-active", isSkin);
-  bodyViewTab.classList.toggle("is-active", !isSkin);
+  bodyViewTab.classList.toggle("is-active", isBody);
+  styleViewTab.classList.toggle("is-active", isStyle);
   skinViewTab.setAttribute("aria-pressed", String(isSkin));
-  bodyViewTab.setAttribute("aria-pressed", String(!isSkin));
-  skinSubtabs.hidden = !isSkin;
-  skinRoutineTab.hidden = !isSkin;
-  skinProductsTab.hidden = !isSkin;
-  bodySubtabs.hidden = isSkin;
-  bodyProgressTab.hidden = isSkin;
-  bodyWorkoutTab.hidden = isSkin;
+  bodyViewTab.setAttribute("aria-pressed", String(isBody));
+  styleViewTab.setAttribute("aria-pressed", String(isStyle));
+  skinSubtabs.toggleAttribute("hidden", !isSkin);
+  skinRoutineTab.toggleAttribute("hidden", !isSkin);
+  skinProductsTab.toggleAttribute("hidden", !isSkin);
+  bodySubtabs.toggleAttribute("hidden", !isBody);
+  bodyProgressTab.toggleAttribute("hidden", !isBody);
+  bodyWorkoutTab.toggleAttribute("hidden", !isBody);
   skinRoutineSection.hidden = !isSkin || !isRoutine;
   skinProductsSection.hidden = !isSkin || isRoutine;
-  bodyProgressSection.hidden = isSkin || !isBodyProgress;
-  bodyWorkoutSection.hidden = isSkin || isBodyProgress;
+  bodyProgressSection.hidden = !isBody || !isBodyProgress;
+  bodyWorkoutSection.hidden = !isBody || isBodyProgress;
   skinRoutineTab.classList.toggle("is-active", isRoutine);
   skinProductsTab.classList.toggle("is-active", !isRoutine);
   bodyProgressTab.classList.toggle("is-active", isBodyProgress);
@@ -293,10 +298,10 @@ function renderBodyWorkoutImagePreview() {
 }
 
 function renderBodyWorkoutCard(workout) {
-  const meta = getBodyPartMeta(workout.bodyPart);
+  const safeYoutubeUrl = escapeHtml(workout.youtubeUrl || "");
 
   return `
-    <article class="body-workout-item">
+    <article class="body-workout-item${workout.imageDataUrl ? "" : " has-no-image"}">
       ${
         workout.imageDataUrl
           ? `<img class="body-workout-item-image" src="${workout.imageDataUrl}" alt="${escapeHtml(
@@ -305,10 +310,6 @@ function renderBodyWorkoutCard(workout) {
           : ""
       }
       <div class="body-workout-item-copy">
-        <p class="summary-kicker">
-          <ion-icon name="${meta.icon}" aria-hidden="true"></ion-icon>
-          <span>${escapeHtml(meta.label)}</span>
-        </p>
         <h3>${escapeHtml(workout.title || "이름 없는 운동")}</h3>
         ${
           workout.note
@@ -316,14 +317,31 @@ function renderBodyWorkoutCard(workout) {
             : '<p class="body-workout-note is-muted">메모 없음</p>'
         }
       </div>
-      <button
-        class="button button-secondary body-workout-delete"
-        type="button"
-        data-workout-id="${workout.id}"
-      >
-        <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
-        <span>삭제</span>
-      </button>
+      <div class="body-workout-actions">
+        ${
+          workout.youtubeUrl
+            ? `
+              <a
+                class="button button-secondary body-workout-link"
+                href="${safeYoutubeUrl}"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <ion-icon name="logo-youtube" aria-hidden="true"></ion-icon>
+                <span>영상</span>
+              </a>
+            `
+            : ""
+        }
+        <button
+          class="button button-secondary body-workout-delete"
+          type="button"
+          data-workout-id="${workout.id}"
+        >
+          <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+          <span>삭제</span>
+        </button>
+      </div>
     </article>
   `;
 }
@@ -389,6 +407,7 @@ function handleBodyWorkoutSubmit(event) {
     id: createSkinVideoId(),
     bodyPart: bodyWorkoutPart,
     title,
+    youtubeUrl: bodyWorkoutYoutubeInput.value.trim(),
     note: bodyWorkoutNoteInput.value.trim(),
     imageDataUrl: bodyWorkoutImageData,
     addedAt: new Date().toISOString(),

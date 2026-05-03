@@ -159,6 +159,10 @@
               <span>운동 메모</span>
             </button>
           </div>
+          <button id="styleViewTab" class="view-tab" type="button" aria-pressed="false">
+            <ion-icon name="shirt-outline" aria-hidden="true"></ion-icon>
+            <span>Style Care</span>
+          </button>
         </section>
 
         <section id="skinView" class="content-view layout-section">
@@ -340,9 +344,14 @@
               <div class="body-card-head">
                 <p class="section-kicker">
                   <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
-                  <span>Season Board</span>
+                  <span>Season Table</span>
                 </p>
-                <h2>Skin type × season table</h2>
+                <h2>Season table</h2>
+                <div id="skinTypeSelector" class="skin-type-selector" aria-label="Skin type selector">
+                  <button class="skin-type-button" type="button" data-skin-type-option="dry">건성</button>
+                  <button class="skin-type-button" type="button" data-skin-type-option="oily">지성</button>
+                  <button class="skin-type-button is-active" type="button" data-skin-type-option="combo">수부지 / 복합성</button>
+                </div>
               </div>
               <div class="skin-season-board-wrap">
                 <div id="skinProductMatrix" class="skin-season-board"></div>
@@ -565,6 +574,10 @@
                     <span>운동 이름</span>
                     <input id="bodyWorkoutTitleInput" type="text" placeholder="예: 인클라인 덤벨 프레스" required />
                   </label>
+                  <label class="body-field">
+                    <span>YouTube 링크</span>
+                    <input id="bodyWorkoutYoutubeInput" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." />
+                  </label>
                   <label class="body-field body-field-note">
                     <span>메모</span>
                     <textarea id="bodyWorkoutNoteInput" rows="4" placeholder="세트, 반복 수, 자세 포인트, 느낌 등을 적어두세요."></textarea>
@@ -606,6 +619,89 @@
             </div>
           </section>
         </section>
+
+        <section id="styleView" class="content-view layout-section style-view" hidden>
+          <div class="style-shell">
+            <section class="card style-hero">
+              <p class="section-kicker">
+                <ion-icon name="shirt-outline" aria-hidden="true"></ion-icon>
+                <span>Style Care</span>
+              </p>
+              <h2>Style board</h2>
+              <p class="section-note">
+                코디, 향수, 헤어스타일, 사고 싶은 아이템을 사진과 메모로 모아두는 개인 스타일 보드.
+              </p>
+            </section>
+
+            <div class="style-grid">
+              <section class="card style-card">
+                <div class="body-card-head">
+                  <p class="section-kicker">
+                    <ion-icon name="add-circle-outline" aria-hidden="true"></ion-icon>
+                    <span>새 항목</span>
+                  </p>
+                  <h2>스타일 메모</h2>
+                </div>
+                <form id="styleItemForm" class="style-form">
+                  <div id="styleCategoryInput" class="style-category-control" role="group" aria-label="Style category">
+                    <button class="style-category-button is-active" type="button" data-style-category="outfit">코디</button>
+                    <button class="style-category-button" type="button" data-style-category="fragrance">향수</button>
+                    <button class="style-category-button" type="button" data-style-category="hair">헤어스타일</button>
+                    <button class="style-category-button" type="button" data-style-category="wishlist">위시리스트</button>
+                  </div>
+
+                  <div class="style-form-grid">
+                    <label class="body-field">
+                      <span>제목</span>
+                      <input id="styleItemTitleInput" type="text" placeholder="예: 봄 데일리 코디" required />
+                    </label>
+                    <label class="body-field">
+                      <span>링크</span>
+                      <input id="styleItemLinkInput" type="url" inputmode="url" placeholder="https://..." />
+                    </label>
+                  </div>
+
+                  <label class="body-field body-field-note">
+                    <span>메모</span>
+                    <textarea id="styleItemNoteInput" rows="4" placeholder="핏, 브랜드, 향 느낌, 저장 이유 등을 적어두세요."></textarea>
+                  </label>
+
+                  <div
+                    id="styleItemImageZone"
+                    class="style-image-zone"
+                    tabindex="0"
+                    role="button"
+                    aria-label="Paste or upload style image"
+                  >
+                    <div class="style-image-zone-copy">
+                      <ion-icon name="image-outline" aria-hidden="true"></ion-icon>
+                      <strong>이미지 붙여넣기</strong>
+                      <p>코디 사진, 향수 이미지, 헤어스타일 레퍼런스를 붙여넣거나 클릭해서 업로드할 수 있어요.</p>
+                    </div>
+                    <div id="styleItemImagePreview" class="style-image-preview" hidden></div>
+                  </div>
+                  <input id="styleItemImageInput" type="file" accept="image/*" hidden />
+
+                  <button class="button" type="submit">
+                    <ion-icon name="save-outline" aria-hidden="true"></ion-icon>
+                    <span>저장</span>
+                  </button>
+                </form>
+              </section>
+
+              <section class="card style-card">
+                <div class="body-card-head">
+                  <p class="section-kicker">
+                    <ion-icon name="albums-outline" aria-hidden="true"></ion-icon>
+                    <span>Library</span>
+                  </p>
+                  <h2>스타일 라이브러리</h2>
+                </div>
+                <div id="styleItemList" class="style-list"></div>
+              </section>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -613,6 +709,7 @@
     <script src="assets/js/core.js"></script>
     <script src="assets/js/skin.js"></script>
     <script src="assets/js/body.js"></script>
+    <script src="assets/js/style-care.js"></script>
     <script src="assets/js/init.js"></script>
     <script
       type="module"

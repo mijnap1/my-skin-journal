@@ -114,12 +114,15 @@ const skinProductNoteInput = document.getElementById("skinProductNoteInput");
 const skinProductImageZone = document.getElementById("skinProductImageZone");
 const skinProductImagePreview = document.getElementById("skinProductImagePreview");
 const skinProductImageInput = document.getElementById("skinProductImageInput");
+const skinTypeSelector = document.getElementById("skinTypeSelector");
 const skinViewTab = document.getElementById("skinViewTab");
 const bodyViewTab = document.getElementById("bodyViewTab");
+const styleViewTab = document.getElementById("styleViewTab");
 const skinSubtabs = document.querySelector(".skin-subtabs");
 const bodySubtabs = document.querySelector(".body-subtabs");
 const skinView = document.getElementById("skinView");
 const bodyView = document.getElementById("bodyView");
+const styleView = document.getElementById("styleView");
 const bodyProgressTab = document.getElementById("bodyProgressTab");
 const bodyWorkoutTab = document.getElementById("bodyWorkoutTab");
 const bodyProgressSection = document.getElementById("bodyProgressSection");
@@ -144,11 +147,24 @@ const bodyPartButtons = bodyWorkoutPartInput
   ? Array.from(bodyWorkoutPartInput.querySelectorAll("[data-body-part]"))
   : [];
 const bodyWorkoutTitleInput = document.getElementById("bodyWorkoutTitleInput");
+const bodyWorkoutYoutubeInput = document.getElementById("bodyWorkoutYoutubeInput");
 const bodyWorkoutNoteInput = document.getElementById("bodyWorkoutNoteInput");
 const bodyWorkoutImageZone = document.getElementById("bodyWorkoutImageZone");
 const bodyWorkoutImagePreview = document.getElementById("bodyWorkoutImagePreview");
 const bodyWorkoutImageInput = document.getElementById("bodyWorkoutImageInput");
 const bodyWorkoutList = document.getElementById("bodyWorkoutList");
+const styleItemForm = document.getElementById("styleItemForm");
+const styleCategoryInput = document.getElementById("styleCategoryInput");
+const styleCategoryButtons = styleCategoryInput
+  ? Array.from(styleCategoryInput.querySelectorAll("[data-style-category]"))
+  : [];
+const styleItemTitleInput = document.getElementById("styleItemTitleInput");
+const styleItemLinkInput = document.getElementById("styleItemLinkInput");
+const styleItemNoteInput = document.getElementById("styleItemNoteInput");
+const styleItemImageZone = document.getElementById("styleItemImageZone");
+const styleItemImagePreview = document.getElementById("styleItemImagePreview");
+const styleItemImageInput = document.getElementById("styleItemImageInput");
+const styleItemList = document.getElementById("styleItemList");
 const authCard = document.getElementById("authCard");
 const appContent = document.getElementById("appContent");
 const authStatus = document.getElementById("authStatus");
@@ -169,6 +185,8 @@ const SKIN_SEASONS = [
   { value: "winter", label: "겨울", icon: "snow-outline" },
 ];
 const SKIN_TYPES = [
+  { value: "dry", label: "건성" },
+  { value: "oily", label: "지성" },
   { value: "combo", label: "수부지 / 복합성" },
 ];
 const BODY_PARTS = [
@@ -182,6 +200,12 @@ const BODY_PARTS = [
   { value: "legs", label: "하체", icon: "walk-outline" },
   { value: "cardio", label: "유산소", icon: "pulse-outline" },
 ];
+const STYLE_CATEGORIES = [
+  { value: "outfit", label: "코디", icon: "shirt-outline" },
+  { value: "fragrance", label: "향수", icon: "sparkles-outline" },
+  { value: "hair", label: "헤어스타일", icon: "cut-outline" },
+  { value: "wishlist", label: "위시리스트", icon: "bag-handle-outline" },
+];
 const moodOptions = [
   { value: "calm", label: "Calm", icon: "leaf-outline" },
   { value: "glowy", label: "Glowy", icon: "sparkles-outline" },
@@ -192,6 +216,7 @@ const moodOptions = [
 let routineData = loadRoutine();
 let bodyData = loadBodyData();
 let skinLibraryData = loadSkinLibraryData();
+let styleData = loadStyleData();
 let currentTheme = loadTheme();
 let mobileOpenDay = getTodayIndex();
 let mobileEditDay = null;
@@ -217,6 +242,8 @@ let skinProductImageData = "";
 let skinProductTargetCell = { season: "spring", skinType: "combo" };
 let bodyWorkoutPart = "chest";
 let bodyWorkoutImageData = "";
+let styleCategory = "outfit";
+let styleItemImageData = "";
 const cellContextMenu = createCellContextMenu();
 
 function normalizeMorningRoutine(morning) {
@@ -514,6 +541,12 @@ function createEmptySkinLibraryData() {
   };
 }
 
+function createEmptyStyleData() {
+  return {
+    items: [],
+  };
+}
+
 function normalizeBodyData(data) {
   if (!data || typeof data !== "object") {
     return createEmptyBodyData();
@@ -560,6 +593,7 @@ function normalizeBodyData(data) {
                   ? entry.bodyPart
                   : "chest",
             title: typeof entry.title === "string" ? entry.title : "",
+            youtubeUrl: typeof entry.youtubeUrl === "string" ? entry.youtubeUrl : "",
             note: typeof entry.note === "string" ? entry.note : "",
             imageDataUrl: typeof entry.imageDataUrl === "string" ? entry.imageDataUrl : "",
             addedAt: typeof entry.addedAt === "string" ? entry.addedAt : new Date().toISOString(),
@@ -623,12 +657,38 @@ function normalizeSkinLibraryData(data) {
   };
 }
 
+function normalizeStyleData(data) {
+  if (!data || typeof data !== "object") {
+    return createEmptyStyleData();
+  }
+
+  return {
+    items: Array.isArray(data.items)
+      ? data.items
+          .filter((entry) => entry && typeof entry.id === "string")
+          .map((entry) => ({
+            id: entry.id,
+            category: STYLE_CATEGORIES.some((item) => item.value === entry.category)
+              ? entry.category
+              : "outfit",
+            title: typeof entry.title === "string" ? entry.title : "",
+            link: typeof entry.link === "string" ? entry.link : "",
+            note: typeof entry.note === "string" ? entry.note : "",
+            imageDataUrl: typeof entry.imageDataUrl === "string" ? entry.imageDataUrl : "",
+            addedAt: typeof entry.addedAt === "string" ? entry.addedAt : new Date().toISOString(),
+          }))
+          .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
+      : [],
+  };
+}
+
 function normalizeAppData(data) {
   if (data && typeof data === "object" && !Array.isArray(data) && data.skinTimeline) {
     return {
       skinTimeline: normalizeRoutineData(data.skinTimeline),
       bodyProgress: normalizeBodyData(data.bodyProgress),
       skinLibrary: normalizeSkinLibraryData(data.skinLibrary),
+      styleBoard: normalizeStyleData(data.styleBoard),
     };
   }
 
@@ -636,6 +696,7 @@ function normalizeAppData(data) {
     skinTimeline: normalizeRoutineData(data),
     bodyProgress: createEmptyBodyData(),
     skinLibrary: createEmptySkinLibraryData(),
+    styleBoard: createEmptyStyleData(),
   };
 }
 
@@ -671,6 +732,10 @@ function hasMeaningfulSkinLibrary(data) {
     (Array.isArray(data?.videos) && data.videos.length > 0) ||
     (Array.isArray(data?.products) && data.products.length > 0)
   );
+}
+
+function hasMeaningfulStyleData(data) {
+  return Array.isArray(data?.items) && data.items.length > 0;
 }
 
 function normalizeTimelineEntries(entries) {
@@ -810,6 +875,21 @@ function loadSkinLibraryData() {
   }
 }
 
+function loadStyleData() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+      return createEmptyStyleData();
+    }
+
+    const parsed = JSON.parse(saved);
+    return normalizeAppData(parsed).styleBoard;
+  } catch (error) {
+    console.warn("Failed to read style board:", error);
+    return createEmptyStyleData();
+  }
+}
+
 function loadTheme() {
   const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
   if (savedTheme === "light" || savedTheme === "dark") {
@@ -820,7 +900,10 @@ function loadTheme() {
 
 function loadActiveView() {
   const saved = localStorage.getItem(ACTIVE_VIEW_KEY);
-  return saved === "body" ? "body" : "skin";
+  if (saved === "body" || saved === "style") {
+    return saved;
+  }
+  return "skin";
 }
 
 function loadActiveSkinSection() {
@@ -876,10 +959,11 @@ function toggleTheme() {
 
 function buildAppPayload() {
   return {
-    version: 5,
+    version: 6,
     skinTimeline: routineData,
     bodyProgress: bodyData,
     skinLibrary: skinLibraryData,
+    styleBoard: styleData,
   };
 }
 
@@ -1234,9 +1318,11 @@ async function loadRemoteRoutine() {
     !hasMeaningfulRoutine(remoteAppData.skinTimeline) &&
     !remoteAppData.bodyProgress.entries.length &&
     !hasMeaningfulSkinLibrary(remoteAppData.skinLibrary) &&
+    !hasMeaningfulStyleData(remoteAppData.styleBoard) &&
     (hasMeaningfulRoutine(routineData) ||
       bodyData.entries.length > 0 ||
-      hasMeaningfulSkinLibrary(skinLibraryData))
+      hasMeaningfulSkinLibrary(skinLibraryData) ||
+      hasMeaningfulStyleData(styleData))
   ) {
     saveRoutine("현재 기기 루틴을 계정에 저장했어요.");
     return;
@@ -1245,6 +1331,7 @@ async function loadRemoteRoutine() {
   routineData = remoteAppData.skinTimeline;
   bodyData = remoteAppData.bodyProgress;
   skinLibraryData = remoteAppData.skinLibrary;
+  styleData = remoteAppData.styleBoard;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(buildAppPayload()));
 }
 
@@ -1328,6 +1415,7 @@ async function handleAuthSubmit(event) {
     routineData = createEmptyTimeline();
     bodyData = createEmptyBodyData();
     skinLibraryData = createEmptySkinLibraryData();
+    styleData = createEmptyStyleData();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(buildAppPayload()));
     await saveRoutineRemote();
   } else {
