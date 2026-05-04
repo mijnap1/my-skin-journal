@@ -206,11 +206,26 @@ function renderSkinVideoList() {
 
   skinVideoList.querySelectorAll("[data-video-id]").forEach((button) => {
     button.addEventListener("click", () => {
+      const videoIndex = skinLibraryData.videos.findIndex(
+        (video) => video.id === button.dataset.videoId
+      );
+      if (videoIndex < 0) {
+        return;
+      }
+      const removedVideo = cloneForUndo(skinLibraryData.videos[videoIndex]);
       skinLibraryData.videos = skinLibraryData.videos.filter(
         (video) => video.id !== button.dataset.videoId
       );
       saveRoutine("저장한 영상을 삭제했어요.");
       renderSkinVideoList();
+      showUndoToast("영상이 삭제됐어요.", () => {
+        if (skinLibraryData.videos.some((video) => video.id === removedVideo.id)) {
+          return;
+        }
+        skinLibraryData.videos.splice(videoIndex, 0, removedVideo);
+        saveRoutine("삭제를 되돌렸어요.");
+        renderSkinVideoList();
+      });
     });
   });
 }
@@ -452,11 +467,26 @@ function renderSkinProductList() {
   document.querySelectorAll("[data-product-id]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
+      const productIndex = skinLibraryData.products.findIndex(
+        (product) => product.id === button.dataset.productId
+      );
+      if (productIndex < 0) {
+        return;
+      }
+      const removedProduct = cloneForUndo(skinLibraryData.products[productIndex]);
       skinLibraryData.products = skinLibraryData.products.filter(
         (product) => product.id !== button.dataset.productId
       );
       saveRoutine("저장한 제품을 삭제했어요.");
       renderSkinProductList();
+      showUndoToast("제품이 삭제됐어요.", () => {
+        if (skinLibraryData.products.some((product) => product.id === removedProduct.id)) {
+          return;
+        }
+        skinLibraryData.products.splice(productIndex, 0, removedProduct);
+        saveRoutine("삭제를 되돌렸어요.");
+        renderSkinProductList();
+      });
     });
   });
 

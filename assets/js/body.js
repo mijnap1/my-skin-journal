@@ -245,9 +245,19 @@ function renderBodyHistory() {
 
   bodyHistory.querySelectorAll("[data-entry-index]").forEach((button) => {
     button.addEventListener("click", () => {
-      bodyData.entries.splice(Number(button.dataset.entryIndex), 1);
+      const entryIndex = Number(button.dataset.entryIndex);
+      if (entryIndex < 0 || !bodyData.entries[entryIndex]) {
+        return;
+      }
+      const removedEntry = cloneForUndo(bodyData.entries[entryIndex]);
+      bodyData.entries.splice(entryIndex, 1);
       saveBodyProgress("체크인 기록을 삭제했어요.");
       renderBodyProgress();
+      showUndoToast("체크인 기록이 삭제됐어요.", () => {
+        bodyData.entries.splice(entryIndex, 0, removedEntry);
+        saveBodyProgress("삭제를 되돌렸어요.");
+        renderBodyProgress();
+      });
     });
   });
 }
@@ -385,11 +395,26 @@ function renderBodyWorkoutList() {
 
   bodyWorkoutList.querySelectorAll("[data-workout-id]").forEach((button) => {
     button.addEventListener("click", () => {
+      const workoutIndex = bodyData.workouts.findIndex(
+        (workout) => workout.id === button.dataset.workoutId
+      );
+      if (workoutIndex < 0) {
+        return;
+      }
+      const removedWorkout = cloneForUndo(bodyData.workouts[workoutIndex]);
       bodyData.workouts = bodyData.workouts.filter(
         (workout) => workout.id !== button.dataset.workoutId
       );
       saveBodyProgress("운동 메모를 삭제했어요.");
       renderBodyWorkoutList();
+      showUndoToast("운동 메모가 삭제됐어요.", () => {
+        if (bodyData.workouts.some((workout) => workout.id === removedWorkout.id)) {
+          return;
+        }
+        bodyData.workouts.splice(workoutIndex, 0, removedWorkout);
+        saveBodyProgress("삭제를 되돌렸어요.");
+        renderBodyWorkoutList();
+      });
     });
   });
 }

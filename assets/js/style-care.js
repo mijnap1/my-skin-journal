@@ -123,9 +123,22 @@ function renderStyleBoard() {
 
   styleItemList.querySelectorAll("[data-style-id]").forEach((button) => {
     button.addEventListener("click", () => {
+      const itemIndex = styleData.items.findIndex((item) => item.id === button.dataset.styleId);
+      if (itemIndex < 0) {
+        return;
+      }
+      const removedItem = cloneForUndo(styleData.items[itemIndex]);
       styleData.items = styleData.items.filter((item) => item.id !== button.dataset.styleId);
       saveStyleBoard("스타일 메모를 삭제했어요.");
       renderStyleBoard();
+      showUndoToast("스타일 메모가 삭제됐어요.", () => {
+        if (styleData.items.some((item) => item.id === removedItem.id)) {
+          return;
+        }
+        styleData.items.splice(itemIndex, 0, removedItem);
+        saveStyleBoard("삭제를 되돌렸어요.");
+        renderStyleBoard();
+      });
     });
   });
 }

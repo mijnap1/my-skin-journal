@@ -177,6 +177,10 @@ const authMessage = document.getElementById("authMessage");
 const authSubmit = document.getElementById("authSubmit");
 const signInTab = document.getElementById("signInTab");
 const signUpTab = document.getElementById("signUpTab");
+const undoToast = document.getElementById("undoToast");
+const undoToastMessage = document.getElementById("undoToastMessage");
+const undoToastButton = document.getElementById("undoToastButton");
+const undoToastClose = document.getElementById("undoToastClose");
 
 const SKIN_SEASONS = [
   { value: "spring", label: "봄", icon: "leaf-outline" },
@@ -244,6 +248,8 @@ let bodyWorkoutPart = "chest";
 let bodyWorkoutImageData = "";
 let styleCategory = "outfit";
 let styleItemImageData = "";
+let undoToastTimer = null;
+let pendingUndoAction = null;
 const cellContextMenu = createCellContextMenu();
 
 function normalizeMorningRoutine(morning) {
@@ -977,6 +983,45 @@ function toggleSettingsMenu() {
   setSettingsOpen(!isSettingsOpen);
 }
 
+function cloneForUndo(value) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(value);
+  }
+
+  return JSON.parse(JSON.stringify(value));
+}
+
+function hideUndoToast() {
+  window.clearTimeout(undoToastTimer);
+  pendingUndoAction = null;
+  undoToast.hidden = true;
+  undoToast.classList.remove("is-visible");
+}
+
+function showUndoToast(message, onUndo) {
+  window.clearTimeout(undoToastTimer);
+  pendingUndoAction = typeof onUndo === "function" ? onUndo : null;
+  undoToastMessage.textContent = message;
+  undoToast.hidden = false;
+  requestAnimationFrame(() => {
+    if (!undoToast.hidden) {
+      undoToast.classList.add("is-visible");
+    }
+  });
+  undoToastTimer = window.setTimeout(hideUndoToast, 6500);
+}
+
+function runPendingUndo() {
+  if (!pendingUndoAction) {
+    hideUndoToast();
+    return;
+  }
+
+  const action = pendingUndoAction;
+  hideUndoToast();
+  action();
+}
+
 function setBodyCalendarDate(dateKey) {
   const resolvedDate = dateKey || getTodayDateKey();
   bodyDateInput.dataset.value = resolvedDate;
@@ -990,6 +1035,25 @@ function setBodyCalendarOpen(nextState) {
   bodyDateToggle.setAttribute("aria-expanded", String(nextState));
   if (nextState) {
     renderBodyCalendar();
+  }
+}
+
+function handleBodyCalendarClick(event) {
+  const navButton = event.target.closest("[data-calendar-nav]");
+  if (navButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    bodyCalendarMonth = shiftMonth(bodyCalendarMonth, Number(navButton.dataset.calendarNav));
+    renderBodyCalendar();
+    return;
+  }
+
+  const dateButton = event.target.closest("[data-date-key]");
+  if (dateButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    setBodyCalendarDate(dateButton.dataset.dateKey);
+    setBodyCalendarOpen(false);
   }
 }
 
@@ -1042,19 +1106,10 @@ function renderBodyCalendar() {
     </div>
   `;
 
-  bodyCalendarPanel.querySelectorAll("[data-calendar-nav]").forEach((button) => {
-    button.addEventListener("click", () => {
-      bodyCalendarMonth = shiftMonth(bodyCalendarMonth, Number(button.dataset.calendarNav));
-      renderBodyCalendar();
-    });
-  });
-
-  bodyCalendarPanel.querySelectorAll("[data-date-key]").forEach((button) => {
-    button.addEventListener("click", () => {
-      setBodyCalendarDate(button.dataset.dateKey);
-      setBodyCalendarOpen(false);
-    });
-  });
+  bodyCalendarPanel.onclick = handleBodyCalendarClick;
+  bodyCalendarPanel.onpointerdown = (event) => {
+    event.stopPropagation();
+  };
 }
 
 function createCellContextMenu() {
@@ -1363,6 +1418,7 @@ function queueRemoteSave() {
 
 async function handleAuthSubmit(event) {
   event.preventDefault();
+  hideUndoToast();
 
   if (!supabaseClient) {
     setAuthMessage("먼저 script.js에 Supabase URL과 anon key를 넣어야 합니다.", "error");
@@ -1435,6 +1491,8 @@ async function handleAuthSubmit(event) {
 }
 
 async function handleLogout() {
+  hideUndoToast();
+
   if (supabaseClient && currentSessionToken) {
     const { error } = await supabaseClient.rpc("skin_journal_sign_out", {
       p_token: currentSessionToken,

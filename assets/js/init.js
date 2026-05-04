@@ -16,11 +16,14 @@ document.addEventListener("scroll", closeCellContextMenu, true);
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeCellContextMenu();
+    hideUndoToast();
   }
 });
 
 themeToggle.addEventListener("click", toggleTheme);
 settingsButton.addEventListener("click", toggleSettingsMenu);
+undoToastButton.addEventListener("click", runPendingUndo);
+undoToastClose.addEventListener("click", hideUndoToast);
 skinViewTab.addEventListener("click", () => setActiveView("skin"));
 bodyViewTab.addEventListener("click", () => setActiveView("body"));
 styleViewTab.addEventListener("click", () => setActiveView("style"));

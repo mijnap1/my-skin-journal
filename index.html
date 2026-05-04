@@ -705,6 +705,17 @@
       </main>
     </div>
 
+    <div id="undoToast" class="undo-toast" role="status" aria-live="polite" hidden>
+      <div class="undo-toast-copy">
+        <ion-icon name="refresh-outline" aria-hidden="true"></ion-icon>
+        <span id="undoToastMessage">삭제했어요.</span>
+      </div>
+      <button id="undoToastButton" class="undo-toast-action" type="button">Undo</button>
+      <button id="undoToastClose" class="undo-toast-close" type="button" aria-label="Dismiss undo message">
+        <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      </button>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/core.js"></script>
     <script src="assets/js/skin.js"></script>

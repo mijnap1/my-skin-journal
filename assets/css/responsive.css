@@ -414,6 +414,17 @@
     grid-template-columns: 1fr;
     gap: 10px;
   }
+
+  .undo-toast {
+    bottom: max(14px, env(safe-area-inset-bottom));
+    width: calc(100% - 24px);
+    border-radius: 22px;
+    align-items: stretch;
+  }
+
+  .undo-toast-copy {
+    font-size: 0.84rem;
+  }
 }
 
 @media (max-width: 400px) {
