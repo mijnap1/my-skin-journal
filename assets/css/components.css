@@ -1134,6 +1134,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.body-workout-edit,
 .body-workout-delete {
   width: auto;
   min-width: 96px;
@@ -1149,6 +1150,7 @@
 }
 
 .body-workout-link,
+.body-workout-edit,
 .body-workout-delete {
   min-height: 38px;
 }
@@ -1409,6 +1411,7 @@
 }
 
 .style-item-link,
+.style-item-edit,
 .style-item-delete {
   min-height: 38px;
   min-width: 86px;
@@ -1635,6 +1638,7 @@
 }
 
 .skin-video-link-button,
+.skin-video-edit-button,
 .skin-video-delete-button {
   min-height: 40px;
 }

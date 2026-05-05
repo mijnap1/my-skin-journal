@@ -394,8 +394,10 @@
   }
 
   .body-workout-link,
+  .body-workout-edit,
   .body-workout-delete,
   .style-item-link,
+  .style-item-edit,
   .style-item-delete {
     width: 100%;
     justify-content: center;

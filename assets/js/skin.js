@@ -184,9 +184,17 @@ function renderSkinVideoList() {
                   <span>Open</span>
                 </a>
                 <button
+                  class="button button-secondary skin-video-edit-button"
+                  type="button"
+                  data-video-edit-id="${video.id}"
+                >
+                  <ion-icon name="create-outline" aria-hidden="true"></ion-icon>
+                  <span>Edit</span>
+                </button>
+                <button
                   class="button button-secondary skin-video-delete-button"
                   type="button"
-                  data-video-id="${video.id}"
+                  data-video-delete-id="${video.id}"
                 >
                   <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
                   <span>Delete</span>
@@ -204,17 +212,23 @@ function renderSkinVideoList() {
     )
     .join("");
 
-  skinVideoList.querySelectorAll("[data-video-id]").forEach((button) => {
+  skinVideoList.querySelectorAll("[data-video-edit-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      startEditingSkinVideo(button.dataset.videoEditId);
+    });
+  });
+
+  skinVideoList.querySelectorAll("[data-video-delete-id]").forEach((button) => {
     button.addEventListener("click", () => {
       const videoIndex = skinLibraryData.videos.findIndex(
-        (video) => video.id === button.dataset.videoId
+        (video) => video.id === button.dataset.videoDeleteId
       );
       if (videoIndex < 0) {
         return;
       }
       const removedVideo = cloneForUndo(skinLibraryData.videos[videoIndex]);
       skinLibraryData.videos = skinLibraryData.videos.filter(
-        (video) => video.id !== button.dataset.videoId
+        (video) => video.id !== button.dataset.videoDeleteId
       );
       saveRoutine("저장한 영상을 삭제했어요.");
       renderSkinVideoList();
@@ -334,9 +348,17 @@ function renderSkinProductCard(product) {
             : ""
         }
         <button
+          class="button button-secondary skin-product-edit-button"
+          type="button"
+          data-product-edit-id="${product.id}"
+        >
+          <ion-icon name="create-outline" aria-hidden="true"></ion-icon>
+          <span>Edit</span>
+        </button>
+        <button
           class="button button-secondary skin-product-delete-button"
           type="button"
-          data-product-id="${product.id}"
+          data-product-delete-id="${product.id}"
         >
           <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
           <span>Delete</span>
@@ -464,18 +486,25 @@ function renderSkinProductList() {
     });
   });
 
-  document.querySelectorAll("[data-product-id]").forEach((button) => {
+  document.querySelectorAll("[data-product-edit-id]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      startEditingSkinProduct(button.dataset.productEditId);
+    });
+  });
+
+  document.querySelectorAll("[data-product-delete-id]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       const productIndex = skinLibraryData.products.findIndex(
-        (product) => product.id === button.dataset.productId
+        (product) => product.id === button.dataset.productDeleteId
       );
       if (productIndex < 0) {
         return;
       }
       const removedProduct = cloneForUndo(skinLibraryData.products[productIndex]);
       skinLibraryData.products = skinLibraryData.products.filter(
-        (product) => product.id !== button.dataset.productId
+        (product) => product.id !== button.dataset.productDeleteId
       );
       saveRoutine("저장한 제품을 삭제했어요.");
       renderSkinProductList();
@@ -493,6 +522,27 @@ function renderSkinProductList() {
   renderSkinProductImagePreview();
 }
 
+function startEditingSkinProduct(productId) {
+  const product = skinLibraryData.products.find((item) => item.id === productId);
+  if (!product) {
+    return;
+  }
+
+  editingSkinProductId = product.id;
+  setSkinProductTargetCell(product.season, product.skinType);
+  setSkinProductStatus(product.status);
+  skinProductNameInput.value = product.name || "";
+  skinProductBrandInput.value = product.brand || "";
+  skinProductCategoryInput.value = product.category || "";
+  skinProductPriceInput.value = product.price || "";
+  skinProductLinkInput.value = product.link || "";
+  skinProductNoteInput.value = product.note || "";
+  skinProductImageData = product.imageDataUrl || "";
+  renderSkinProductImagePreview();
+  skinProductForm.scrollIntoView({ behavior: "smooth", block: "center" });
+  skinProductNameInput.focus();
+}
+
 function handleSkinProductSubmit(event) {
   event.preventDefault();
 
@@ -502,8 +552,11 @@ function handleSkinProductSubmit(event) {
     return;
   }
 
+  const existingProduct = skinLibraryData.products.find(
+    (product) => product.id === editingSkinProductId
+  );
   const nextProduct = {
-    id: createSkinVideoId(),
+    id: existingProduct?.id || createSkinVideoId(),
     name,
     brand: skinProductBrandInput.value.trim(),
     category: skinProductCategoryInput.value.trim(),
@@ -514,28 +567,36 @@ function handleSkinProductSubmit(event) {
     status: skinProductStatus,
     note: skinProductNoteInput.value.trim(),
     imageDataUrl: skinProductImageData,
-    addedAt: new Date().toISOString(),
+    addedAt: existingProduct?.addedAt || new Date().toISOString(),
   };
 
-  skinLibraryData.products.unshift(nextProduct);
-  saveRoutine("스킨케어 제품을 저장했어요.");
+  if (existingProduct) {
+    skinLibraryData.products = skinLibraryData.products.map((product) =>
+      product.id === existingProduct.id ? nextProduct : product
+    );
+  } else {
+    skinLibraryData.products.unshift(nextProduct);
+  }
+
+  saveRoutine(existingProduct ? "스킨케어 제품을 수정했어요." : "스킨케어 제품을 저장했어요.");
   skinProductForm.reset();
+  editingSkinProductId = "";
   setSkinProductStatus("interested");
   skinProductImageData = "";
   renderSkinProductList();
 }
 
-function loadSkinProductImageFromFile(file) {
+async function loadSkinProductImageFromFile(file) {
   if (!file || !file.type.startsWith("image/")) {
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    skinProductImageData = typeof reader.result === "string" ? reader.result : "";
+  try {
+    skinProductImageData = await getOptimizedImageDataUrl(file);
     renderSkinProductImagePreview();
-  };
-  reader.readAsDataURL(file);
+  } catch (error) {
+    flashStatus("이미지를 읽지 못했어요.", "reset");
+  }
 }
 
 function handleSkinProductImagePaste(event) {
@@ -547,6 +608,26 @@ function handleSkinProductImagePaste(event) {
 
   event.preventDefault();
   loadSkinProductImageFromFile(imageItem.getAsFile());
+}
+
+function startEditingSkinVideo(videoId) {
+  const video = skinLibraryData.videos.find((item) => item.id === videoId);
+  if (!video) {
+    return;
+  }
+
+  editingSkinVideoId = video.id;
+  skinVideoUrlInput.value = video.url || buildYouTubeWatchUrl(video.videoId);
+  skinVideoTitleInput.value = video.customTitle || "";
+  skinVideoNoteInput.value = video.note || "";
+  skinVideoPreviewState = {
+    videoId: video.videoId,
+    youtubeTitle: video.youtubeTitle || "",
+    isLoading: false,
+  };
+  renderSkinVideoPreview();
+  skinVideoForm.scrollIntoView({ behavior: "smooth", block: "center" });
+  skinVideoTitleInput.focus();
 }
 
 async function handleSkinVideoSubmit(event) {
@@ -567,20 +648,29 @@ async function handleSkinVideoSubmit(event) {
   const youtubeTitle =
     skinVideoPreviewState?.videoId === videoId ? skinVideoPreviewState.youtubeTitle : "";
 
+  const existingVideo = skinLibraryData.videos.find((video) => video.id === editingSkinVideoId);
   const nextVideo = {
-    id: createSkinVideoId(),
+    id: existingVideo?.id || createSkinVideoId(),
     url: buildYouTubeWatchUrl(videoId),
     videoId,
     customTitle,
     note,
     youtubeTitle: youtubeTitle || (await fetchYouTubeTitle(videoId)),
     thumbnailUrl: buildYouTubeThumbnailUrl(videoId),
-    addedAt: new Date().toISOString(),
+    addedAt: existingVideo?.addedAt || new Date().toISOString(),
   };
 
-  skinLibraryData.videos.unshift(nextVideo);
-  saveRoutine("스킨케어 참고 영상을 저장했어요.");
+  if (existingVideo) {
+    skinLibraryData.videos = skinLibraryData.videos.map((video) =>
+      video.id === existingVideo.id ? nextVideo : video
+    );
+  } else {
+    skinLibraryData.videos.unshift(nextVideo);
+  }
+
+  saveRoutine(existingVideo ? "스킨케어 영상을 수정했어요." : "스킨케어 참고 영상을 저장했어요.");
   skinVideoForm.reset();
+  editingSkinVideoId = "";
   skinVideoPreviewState = null;
   renderSkinVideoPreview();
   renderSkinVideoList();

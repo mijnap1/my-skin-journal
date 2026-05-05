@@ -241,13 +241,17 @@ let isBodyCalendarOpen = false;
 let bodyCalendarMonth = getWeekStartDateKey().slice(0, 7);
 let skinVideoPreviewState = null;
 let skinVideoPreviewTimer = null;
+let editingSkinVideoId = "";
 let skinProductStatus = "interested";
 let skinProductImageData = "";
 let skinProductTargetCell = { season: "spring", skinType: "combo" };
+let editingSkinProductId = "";
 let bodyWorkoutPart = "chest";
 let bodyWorkoutImageData = "";
+let editingBodyWorkoutId = "";
 let styleCategory = "outfit";
 let styleItemImageData = "";
+let editingStyleItemId = "";
 let undoToastTimer = null;
 let pendingUndoAction = null;
 const cellContextMenu = createCellContextMenu();
@@ -341,6 +345,53 @@ function normalizeDecimalInput(value) {
     .replace(",", ".")
     .replace(/[^0-9.]/g, "")
     .replace(/(\..*)\./g, "$1");
+}
+
+function readImageFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(reader.error || new Error("Failed to read image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImageElement(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Failed to load image."));
+    image.src = source;
+  });
+}
+
+async function getOptimizedImageDataUrl(file, maxSize = 900, quality = 0.72) {
+  if (!file || !file.type.startsWith("image/")) {
+    return "";
+  }
+
+  const originalDataUrl = await readImageFileAsDataUrl(file);
+  if (file.type === "image/svg+xml") {
+    return originalDataUrl;
+  }
+
+  const image = await loadImageElement(originalDataUrl);
+  const ratio = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * ratio));
+  const height = Math.max(1, Math.round(image.naturalHeight * ratio));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    return originalDataUrl;
+  }
+
+  context.fillStyle = "#111518";
+  context.fillRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", quality);
 }
 
 function createSkinVideoId() {

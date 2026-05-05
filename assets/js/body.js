@@ -237,6 +237,7 @@ function renderBodyHistory() {
             ${entry.note ? `<p class="body-history-note">${entry.note}</p>` : ""}
           </div>
           <span class="summary-stat-label">${getWeekdayLabel(entry.date)}요일</span>
+          <button class="body-history-delete" type="button" data-entry-edit-index="${index}">Edit</button>
           <button class="body-history-delete" type="button" data-entry-index="${index}">Delete</button>
         </article>
       `
@@ -258,6 +259,21 @@ function renderBodyHistory() {
         saveBodyProgress("삭제를 되돌렸어요.");
         renderBodyProgress();
       });
+    });
+  });
+
+  bodyHistory.querySelectorAll("[data-entry-edit-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const entry = bodyData.entries[Number(button.dataset.entryEditIndex)];
+      if (!entry) {
+        return;
+      }
+
+      bodyWeightInput.value = entry.weightKg || "";
+      setBodyCalendarDate(entry.date);
+      bodyNoteInput.value = entry.note || "";
+      bodyEntryForm.scrollIntoView({ behavior: "smooth", block: "center" });
+      bodyWeightInput.focus();
     });
   });
 }
@@ -344,9 +360,17 @@ function renderBodyWorkoutCard(workout) {
             : ""
         }
         <button
+          class="button button-secondary body-workout-edit"
+          type="button"
+          data-workout-edit-id="${workout.id}"
+        >
+          <ion-icon name="create-outline" aria-hidden="true"></ion-icon>
+          <span>수정</span>
+        </button>
+        <button
           class="button button-secondary body-workout-delete"
           type="button"
-          data-workout-id="${workout.id}"
+          data-workout-delete-id="${workout.id}"
         >
           <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
           <span>삭제</span>
@@ -393,17 +417,23 @@ function renderBodyWorkoutList() {
     `;
   }).join("");
 
-  bodyWorkoutList.querySelectorAll("[data-workout-id]").forEach((button) => {
+  bodyWorkoutList.querySelectorAll("[data-workout-edit-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      startEditingBodyWorkout(button.dataset.workoutEditId);
+    });
+  });
+
+  bodyWorkoutList.querySelectorAll("[data-workout-delete-id]").forEach((button) => {
     button.addEventListener("click", () => {
       const workoutIndex = bodyData.workouts.findIndex(
-        (workout) => workout.id === button.dataset.workoutId
+        (workout) => workout.id === button.dataset.workoutDeleteId
       );
       if (workoutIndex < 0) {
         return;
       }
       const removedWorkout = cloneForUndo(bodyData.workouts[workoutIndex]);
       bodyData.workouts = bodyData.workouts.filter(
-        (workout) => workout.id !== button.dataset.workoutId
+        (workout) => workout.id !== button.dataset.workoutDeleteId
       );
       saveBodyProgress("운동 메모를 삭제했어요.");
       renderBodyWorkoutList();
@@ -419,6 +449,23 @@ function renderBodyWorkoutList() {
   });
 }
 
+function startEditingBodyWorkout(workoutId) {
+  const workout = bodyData.workouts.find((item) => item.id === workoutId);
+  if (!workout) {
+    return;
+  }
+
+  editingBodyWorkoutId = workout.id;
+  setBodyWorkoutPart(workout.bodyPart);
+  bodyWorkoutTitleInput.value = workout.title || "";
+  bodyWorkoutYoutubeInput.value = workout.youtubeUrl || "";
+  bodyWorkoutNoteInput.value = workout.note || "";
+  bodyWorkoutImageData = workout.imageDataUrl || "";
+  renderBodyWorkoutImagePreview();
+  bodyWorkoutForm.scrollIntoView({ behavior: "smooth", block: "center" });
+  bodyWorkoutTitleInput.focus();
+}
+
 function handleBodyWorkoutSubmit(event) {
   event.preventDefault();
 
@@ -428,33 +475,45 @@ function handleBodyWorkoutSubmit(event) {
     return;
   }
 
-  bodyData.workouts.unshift({
-    id: createSkinVideoId(),
+  const existingWorkout = bodyData.workouts.find(
+    (workout) => workout.id === editingBodyWorkoutId
+  );
+  const nextWorkout = {
+    id: existingWorkout?.id || createSkinVideoId(),
     bodyPart: bodyWorkoutPart,
     title,
     youtubeUrl: bodyWorkoutYoutubeInput.value.trim(),
     note: bodyWorkoutNoteInput.value.trim(),
     imageDataUrl: bodyWorkoutImageData,
-    addedAt: new Date().toISOString(),
-  });
+    addedAt: existingWorkout?.addedAt || new Date().toISOString(),
+  };
 
-  saveBodyProgress("운동 메모를 저장했어요.");
+  if (existingWorkout) {
+    bodyData.workouts = bodyData.workouts.map((workout) =>
+      workout.id === existingWorkout.id ? nextWorkout : workout
+    );
+  } else {
+    bodyData.workouts.unshift(nextWorkout);
+  }
+
+  saveBodyProgress(existingWorkout ? "운동 메모를 수정했어요." : "운동 메모를 저장했어요.");
   bodyWorkoutForm.reset();
+  editingBodyWorkoutId = "";
   bodyWorkoutImageData = "";
   renderBodyWorkoutList();
 }
 
-function loadBodyWorkoutImageFromFile(file) {
+async function loadBodyWorkoutImageFromFile(file) {
   if (!file || !file.type.startsWith("image/")) {
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    bodyWorkoutImageData = typeof reader.result === "string" ? reader.result : "";
+  try {
+    bodyWorkoutImageData = await getOptimizedImageDataUrl(file);
     renderBodyWorkoutImagePreview();
-  };
-  reader.readAsDataURL(file);
+  } catch (error) {
+    flashStatus("이미지를 읽지 못했어요.", "reset");
+  }
 }
 
 function handleBodyWorkoutImagePaste(event) {

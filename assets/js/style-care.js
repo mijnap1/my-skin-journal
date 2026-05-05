@@ -75,7 +75,11 @@ function renderStyleItemCard(item) {
             `
             : ""
         }
-        <button class="button button-secondary style-item-delete" type="button" data-style-id="${item.id}">
+        <button class="button button-secondary style-item-edit" type="button" data-style-edit-id="${item.id}">
+          <ion-icon name="create-outline" aria-hidden="true"></ion-icon>
+          <span>수정</span>
+        </button>
+        <button class="button button-secondary style-item-delete" type="button" data-style-delete-id="${item.id}">
           <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
           <span>삭제</span>
         </button>
@@ -121,14 +125,20 @@ function renderStyleBoard() {
     `;
   }).join("");
 
-  styleItemList.querySelectorAll("[data-style-id]").forEach((button) => {
+  styleItemList.querySelectorAll("[data-style-edit-id]").forEach((button) => {
     button.addEventListener("click", () => {
-      const itemIndex = styleData.items.findIndex((item) => item.id === button.dataset.styleId);
+      startEditingStyleItem(button.dataset.styleEditId);
+    });
+  });
+
+  styleItemList.querySelectorAll("[data-style-delete-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const itemIndex = styleData.items.findIndex((item) => item.id === button.dataset.styleDeleteId);
       if (itemIndex < 0) {
         return;
       }
       const removedItem = cloneForUndo(styleData.items[itemIndex]);
-      styleData.items = styleData.items.filter((item) => item.id !== button.dataset.styleId);
+      styleData.items = styleData.items.filter((item) => item.id !== button.dataset.styleDeleteId);
       saveStyleBoard("스타일 메모를 삭제했어요.");
       renderStyleBoard();
       showUndoToast("스타일 메모가 삭제됐어요.", () => {
@@ -143,6 +153,23 @@ function renderStyleBoard() {
   });
 }
 
+function startEditingStyleItem(itemId) {
+  const item = styleData.items.find((entry) => entry.id === itemId);
+  if (!item) {
+    return;
+  }
+
+  editingStyleItemId = item.id;
+  setStyleCategory(item.category);
+  styleItemTitleInput.value = item.title || "";
+  styleItemLinkInput.value = item.link || "";
+  styleItemNoteInput.value = item.note || "";
+  styleItemImageData = item.imageDataUrl || "";
+  renderStyleImagePreview();
+  styleItemForm.scrollIntoView({ behavior: "smooth", block: "center" });
+  styleItemTitleInput.focus();
+}
+
 function handleStyleItemSubmit(event) {
   event.preventDefault();
 
@@ -152,33 +179,43 @@ function handleStyleItemSubmit(event) {
     return;
   }
 
-  styleData.items.unshift({
-    id: createSkinVideoId(),
+  const existingItem = styleData.items.find((item) => item.id === editingStyleItemId);
+  const nextItem = {
+    id: existingItem?.id || createSkinVideoId(),
     category: styleCategory,
     title,
     link: styleItemLinkInput.value.trim(),
     note: styleItemNoteInput.value.trim(),
     imageDataUrl: styleItemImageData,
-    addedAt: new Date().toISOString(),
-  });
+    addedAt: existingItem?.addedAt || new Date().toISOString(),
+  };
 
-  saveStyleBoard("스타일 메모를 저장했어요.");
+  if (existingItem) {
+    styleData.items = styleData.items.map((item) =>
+      item.id === existingItem.id ? nextItem : item
+    );
+  } else {
+    styleData.items.unshift(nextItem);
+  }
+
+  saveStyleBoard(existingItem ? "스타일 메모를 수정했어요." : "스타일 메모를 저장했어요.");
   styleItemForm.reset();
+  editingStyleItemId = "";
   styleItemImageData = "";
   renderStyleBoard();
 }
 
-function loadStyleImageFromFile(file) {
+async function loadStyleImageFromFile(file) {
   if (!file || !file.type.startsWith("image/")) {
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    styleItemImageData = typeof reader.result === "string" ? reader.result : "";
+  try {
+    styleItemImageData = await getOptimizedImageDataUrl(file);
     renderStyleImagePreview();
-  };
-  reader.readAsDataURL(file);
+  } catch (error) {
+    flashStatus("이미지를 읽지 못했어요.", "reset");
+  }
 }
 
 function handleStyleImagePaste(event) {
